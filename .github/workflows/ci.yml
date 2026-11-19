@@ -6,15 +6,25 @@ on:
   pull_request:
 
 jobs:
-  test:
+  library:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      # The official installer, pinned to the toolchain this project is built
+      # and tested with. Deliberately not a third-party setup action: fewer
+      # moving parts, and the version is visible here.
       - name: Install MoonBit
-        uses: moonbitlang/setup-moonbit@main
-        with:
-          version: "0.1.20261104"
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s "0.1.20261104"
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Toolchain version and registry index
+        # `moon update` pulls the registry index; without it a clean runner
+        # cannot resolve any dependency.
+        run: |
+          moon version --all
+          moon update
 
       - name: Check (deny warnings)
         run: moon check --target native --deny-warn
@@ -27,10 +37,10 @@ jobs:
           moon fmt
           git diff --exit-code || (echo "::error::moon fmt produced changes; run 'moon fmt' locally" && exit 1)
 
-  # The workspace members (adapters/, spikes/) are NOT part of the published
-  # package - they depend on third-party libraries the library itself does
-  # not. They are still built here on purpose: the adapter is the proof that
-  # the library drives real protocol code, and a regression there is a real
+  # Workspace members (adapters/, spikes/, examples/) are NOT part of the
+  # published package - they depend on third-party libraries the library itself
+  # does not. They are still built here on purpose: the adapters are the proof
+  # that the library drives real protocol code, so a regression there is a real
   # regression. .moonignore keeps them out of `moon package`.
   workspace:
     runs-on: ubuntu-latest
@@ -38,11 +48,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install MoonBit
-        uses: moonbitlang/setup-moonbit@main
-        with:
-          version: "0.1.20261104"
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s "0.1.20261104"
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
 
-      - name: Test workspace (library + mqtt adapter)
+      - name: Registry index
+        run: moon update
+
+      - name: Test workspace (library + both adapters + drill)
         run: moon test --target native
 
       - name: Run the MQTT fault-injection transcript
@@ -52,28 +65,12 @@ jobs:
         run: moon run adapters/amqp1/bin --target native
 
       # docs/adopting.md is executable documentation: this member is a
-      # third-party-shaped library written by following the guide, so a
-      # stale guide fails CI instead of quietly misleading readers.
+      # third-party-shaped library written by following the guide, so a stale
+      # guide fails CI instead of quietly misleading readers.
       - name: The adoption guide still works (adopting-drill)
         run: moon test examples/adopting-drill/drill/src --target native
 
-      # Self-check against the published acceptance criteria. A WARN here is a
-      # human should look; a FAIL means do not submit.
-      # One command for the whole state of the submission: the six published
-      # acceptance rules plus the document-vs-code consistency checks.
-      - name: Self-check
-        run: python tools/selfcheck.py
-
-  # Documents drift away from the code faster than anyone notices. This checks
-  # test-count claims against the real suite, ADR numbering for gaps/duplicates,
-  # and that relative links resolve.
-  consistency:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install MoonBit
-        uses: moonbitlang/setup-moonbit@main
-        with:
-          version: "0.1.20261104"
+      # One command for the whole state of the submission: the acceptance rules
+      # plus the document-vs-code consistency checks.
       - name: Self-check
         run: python tools/selfcheck.py
