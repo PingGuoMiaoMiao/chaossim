@@ -16,8 +16,8 @@ shrink and attach to an issue.
 | --- | --- | --- |
 | 被测对象 | **生产代码本体**（你的 `(node, msg) -> outgoing` 处理函数就是真实现） | 不需要把协议重写成另一套“仿真模型” |
 | 调度 | 种子化确定性投递顺序 + 虚拟时钟 + 有界步数 | 同一 `(handler, initial, seed, plan)` ⇒ 同一 trace |
-| 故障 | v0 实现 crash/静默丢弃；drop、partition、时钟漂移在路线图上 | 故障类型封顶 4 种，超出宁缺毋滥 |
-| 不变量 | 交付/丢弃计数、trace 相等、有界收敛 | 线性一致性**不自研**，计划对接 `moon_historycheck` / `lincheck` |
+| 故障 | crash / loss（定向链路）/ partition（分组，可愈合）/ delay（持有时限，可见慢节点活锁）| 故障类型封顶 4 种，超出宁缺毋滥；无效计划在第一步前 `InvalidFault` 快速失败 |
+| 不变量 | 交付/丢弃/延迟计数、trace 逐行相等、有界收敛；`Replay` 工件 = 场景+结果自包含，换 handler 重放必报差异 | 线性一致性**不自研**，计划对接 `moon_historycheck` / `lincheck` |
 
 **明确不做**：真多进程、真网络包注入、任意 `moonbitlang/async` 程序的运行时
 级截停（见 docs/pre-research.md 的风险分析；若 W1 spike 证明可控，会作为
@@ -45,27 +45,31 @@ moon test                          # determinism / echo / crash-plan 用例
 moon run cmd/main --target native  # 90 秒演示：带种子重放 + crash 注入
 ```
 
-## Library sketch（v0 真实 API，见 sim/*.mbt）
+## Library sketch（v0.2 真实 API，见 sim/*.mbt）
 
 ```moonbit
-let handler : @sim.Handler = (node, msg) =>
-  if msg.payload == 1 { [{ from: node, to: msg.from, payload: 2 }] } else { [] }
+let reply : @sim.Handler = (node, msg) =>
+  [{ from: node, to: msg.from, payload: msg.payload + 1 }]
 
-let result = @sim.run_bounded(
-  handler,
-  [{ from: 0, to: 1, payload: 1 }], // initial messages
-  42,                               // seed
-  100,                              // max steps
-  Some({ node: 1, from_step: 1 }),  // crash plan: node 1 从第 1 步起静默
-)
+let initial : Array[@sim.Msg] = [{ from: 0, to: 1, payload: 1 }]
+let faults = [@sim.crash(1, 2)]
+let result = @sim.run_bounded(reply, initial, 42, 100, faults)
+
+// 自包含 replay 工件（场景 + 结果）；换 handler 重放会 raise ReplayMismatch
+let text = @sim.render_replay("crash demo", 42, 100, initial, faults, result)
+let again = @sim.replay_verify(text, reply)
 ```
+
+`run_bounded` 以 `raise SimError` 报告无效计划 / 坏工件 / 重放分歧
+（`e.code()`、`e.message()`），取舍理由见 [docs/decisions.md](docs/decisions.md)。
 
 ## Roadmap（与验收对齐，只承诺能测的东西）
 
-- [ ] v0.1（本次提交）：种子化投递调度器 + crash 计划 + trace/计数；确定性测试
-- [ ] v0.2：`SimError` 化错误处理；drop / partition 故障；trace 落盘与逐字节重放
-- [ ] v0.3：**spike（风险前置）**：`moonbitlang/async` 续作级调度（ timers/channel 虚拟时间）；
-      可行则做“真实 async handler”适配层，不可行则收窄为纯迁移函数并写进 README
+- [x] v0.1：种子化投递调度器 + crash 计划 + trace/计数；确定性测试
+- [x] v0.2：loss / partition（可愈合）/ delay 故障；`Replay` JSON 工件与
+      `replay_verify` 对账；`SimError`（code/message）；12 项契约测试
+- [ ] v0.3：**spike（风险前置）**：`moonbitlang/async` 续作级调度（timers/channel 虚拟时间）；
+      可行则做"真实 async handler"适配层，不可行则收窄为纯迁移函数并写进 README
 - [ ] v0.4：不变量钩子 + 对接 `moon_historycheck` 的线性一致性示例（复用声明写明出处与许可证）
 - [ ] v1.0（12 月验收包）：对 ≥2 个生态项目（候选：`moonbitstack/moonraft`、
       `Duckweed/moon-mqtt`）出适配 + 真实发现记录（issue 链接）

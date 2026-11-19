@@ -1,6 +1,6 @@
-// 90-second demo: run a two-node request/reply protocol twice under the same
-// seed (replay equality), then crash the responder mid-protocol and watch a
-// reply get dropped — the same scenario `world_wbtest` pins with assertions.
+// 90-second demo: a two-node request/reply protocol under three fault
+// regimes (clean / crash / slow), then the saved replay artifact is
+// re-verified against the recorded claim.
 
 ///|
 fn reply(node : Int32, msg : @sim.Msg) -> Array[@sim.Msg] {
@@ -11,7 +11,7 @@ fn reply(node : Int32, msg : @sim.Msg) -> Array[@sim.Msg] {
 ///|
 fn print_result(label : String, r : @sim.RunResult) -> Unit {
   println(
-    "== \{label}: steps=\{r.steps} delivered=\{r.delivered} dropped=\{r.dropped}",
+    "== \{label}: steps=\{r.steps} delivered=\{r.delivered} dropped=\{r.dropped} deferred=\{r.deferred}",
   )
   for line in r.trace {
     println("   " + line)
@@ -19,24 +19,39 @@ fn print_result(label : String, r : @sim.RunResult) -> Unit {
 }
 
 ///|
-fn main {
+fn demos() -> Unit raise @sim.SimError {
   let initial : Array[@sim.Msg] = [{ from: 0, to: 1, payload: 1, }]
 
-  // healthy run: node0 asks, node1 acks, node0 acks the ack... bounded by
-  // max_steps here so both runs stay tiny and replay-comparable.
-  let a = @sim.run_bounded(reply, initial, 42, 4, None)
-  let b = @sim.run_bounded(reply, initial, 42, 4, None)
-  print_result("run seed=42 max_steps=4", a)
-  println("replay equal: \{a.trace == b.trace}")
+  let clean = @sim.run_bounded(reply, initial, 42, 4, [])
+  print_result("clean max_steps=4", clean)
 
-  // same protocol, but node 1 is down from step 2: its reply still goes out,
-  // the ack aimed back at it is dropped, queue drains.
-  let crashed = @sim.run_bounded(
-    reply,
-    initial,
+  // node 1 goes down from step 2: the ack aimed back at it is dropped
+  let crashed = @sim.run_bounded(reply, initial, 42, 100, [@sim.crash(1, 2)])
+  print_result("crash node=1 from_step=2", crashed)
+
+  // node 1 becomes slow from step 3: same ack keeps getting re-held ->
+  // a visible slow-node livelock
+  let slow = @sim.run_bounded(reply, initial, 42, 8, [@sim.delay(1, 3, 2)])
+  print_result("delay node=1 from_step=3 hold=2", slow)
+
+  // persist the crash scenario as a replay artifact and verify it
+  let artifact = @sim.render_replay(
+    "crash node=1 from_step=2",
     42,
     100,
-    Some({ node: 1, from_step: 2, }),
+    initial,
+    [@sim.crash(1, 2)],
+    crashed,
   )
-  print_result("crash plan node=1 from_step=2", crashed)
+  println("-- replay artifact (JSON) --")
+  println(artifact)
+  let verified = @sim.replay_verify(artifact, reply)
+  println(
+    "replay verified: steps=\{verified.steps} dropped=\{verified.dropped}",
+  )
+}
+
+///|
+fn main {
+  let _ = demos() catch { e => println("demo failed: \{e.message()}") }
 }

@@ -3,46 +3,86 @@ package "PingGuoMiaoMiao/chaossim/sim"
 
 import {
   "moonbitlang/core/debug",
+  "moonbitlang/core/json",
 }
 
 // Values
+pub fn check(Fault) -> Unit raise SimError
+
+pub fn crash(Int32, Int32) -> Fault
+
+pub fn delay(Int32, Int32, Int32) -> Fault
+
+pub fn loss(Int32, Int32, Int32) -> Fault
+
 pub fn next_state(Int32) -> Int32
+
+pub fn partition(Array[Int32], Array[Int32], Int32, Int32) -> Fault
 
 pub fn pick(Int32, Int32) -> (Int32, Int32)
 
-pub fn run_bounded((Int32, Msg) -> Array[Msg], Array[Msg], Int32, Int32, CrashPlan?) -> RunResult
+pub fn render_replay(String, Int32, Int32, Array[Msg], Array[Fault], RunResult) -> String
+
+pub fn replay_verify(String, (Int32, Msg) -> Array[Msg]) -> RunResult raise SimError
+
+pub fn run_bounded((Int32, Msg) -> Array[Msg], Array[Msg], Int32, Int32, Array[Fault]) -> RunResult raise SimError
 
 // Errors
+pub suberror SimError {
+  InvalidFault(String)
+  ParseError(String)
+  ReplayMismatch(String)
+}
+pub fn SimError::code(Self) -> String
+pub fn SimError::message(Self) -> String
 
 // Types and methods
-#derive(Eq, @debug.Debug)
-pub(all) struct CrashPlan {
-  node : Int32
+#derive(@json.FromJson, @json.ToJson)
+pub(all) struct Fault {
+  kind : String
+  a : Int32
+  b : Int32
+  group_a : Array[Int32]
+  group_b : Array[Int32]
   from_step : Int32
+  until : Int32
 }
-pub fn CrashPlan::equal(Self, Self) -> Bool
-pub fn CrashPlan::not_equal(Self, Self) -> Bool
-pub fn CrashPlan::to_repr(Self) -> @debug.Repr
+pub fn Fault::from_json(@json.Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn Fault::to_json(Self) -> @json.Json
 
-#derive(Eq, @debug.Debug)
+#derive(@json.FromJson, @json.ToJson)
 pub(all) struct Msg {
   from : Int32
   to : Int32
   payload : Int32
 }
-pub fn Msg::equal(Self, Self) -> Bool
-pub fn Msg::not_equal(Self, Self) -> Bool
-pub fn Msg::to_repr(Self) -> @debug.Repr
+pub fn Msg::from_json(@json.Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn Msg::to_json(Self) -> @json.Json
 
-#derive(Eq, @debug.Debug)
+#derive(@json.FromJson, @json.ToJson)
+pub(all) struct Replay {
+  label : String
+  seed : Int32
+  max_steps : Int32
+  initial : Array[Msg]
+  faults : Array[Fault]
+  result : RunResult
+}
+pub fn Replay::from_json(@json.Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
+pub fn Replay::to_json(Self) -> @json.Json
+
+#derive(Eq, @debug.Debug, @json.FromJson, @json.ToJson)
 pub(all) struct RunResult {
   steps : Int32
   delivered : Int32
   dropped : Int32
+  deferred : Int32
   trace : Array[String]
 }
 pub fn RunResult::equal(Self, Self) -> Bool
+pub fn RunResult::from_json(@json.Json, @json.JsonPath) -> Self raise @json.JsonDecodeError
 pub fn RunResult::not_equal(Self, Self) -> Bool
+pub fn RunResult::to_json(Self) -> @json.Json
 pub fn RunResult::to_repr(Self) -> @debug.Repr
 
 pub(all) struct VirtualClock {
