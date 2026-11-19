@@ -41,11 +41,25 @@ shrink and attach to an issue.
 
 ## Quick start
 
+需要 MoonBit 工具链（`0.1.20261104` 或更新）。**只有** `tools/` 下的自检脚本需要
+Python 3.9+；库本身与两个适配器都是纯 MoonBit。
+
+从零 clone 后按这个顺序跑，每一条都是独立可验证的（实测总耗时约 8 秒）：
+
 ```sh
-moon build --target native
-moon test                          # determinism / echo / crash-plan 用例
-moon run cmd/main --target native  # 90 秒演示：带种子重放 + crash 注入
+moon test --target native                    # 39 项契约测试（确定性/故障/重放/恢复）
+moon run adapters/mqtt/bin  --target native  # ★ 真实靶子 1：MQTT 客户端的故障注入 transcript
+moon run adapters/amqp1/bin --target native  # ★ 真实靶子 2：AMQP 1.0（另一套协议，同一内核）
+moon run cmd/perf --target native --release  # 吞吐与 CI 预算
+moon run cmd/main --target native            # 最小内核演示：同种子重放 + crash 注入
+
+# 自检脚本（可选，需要 Python）
+python tools/acceptance.py --since 2026-11-01   # 验收六条
+python tools/consistency.py --skip-build        # 文档口径一致性
 ```
+
+先看第二条：它打印的 trace 就是本项目存在的理由——真实协议代码在注入故障后
+`reconciled=true`，以及丢 PUBACK 后按文档恢复、重放帧带 DUP。
 
 ## Library sketch（v0.2 真实 API，见 sim/*.mbt）
 

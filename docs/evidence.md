@@ -44,3 +44,26 @@
 
 尚未自动化：本页「命令 → 期望」的对应关系本身。若某条命令的输出格式变了，
 这里不会自动跟着变。已知缺口，不做掩饰。
+
+## 新读者演练（2026-11-19 实测）
+
+为了验证"从零 clone 能不能跑通"，没有在工作区里假设，而是真的重新 clone 到
+一个空目录（无 `.mooncakes`、无 `_build`），照 README 逐条执行：
+
+| 命令 | 退出码 | 耗时 |
+| --- | --- | --- |
+| `git clone`（60 个文件） | 0 | — |
+| `moon test --target native` | 0 | 4.2 s（39/39，依赖自动解析） |
+| `moon run adapters/mqtt/bin --target native` | 0 | 1.7 s |
+| `moon run adapters/amqp1/bin --target native` | 0 | 1.2 s |
+| `moon run cmd/main --target native` | 0 | 0.6 s |
+| `python tools/acceptance.py --skip-build` | 0 | 7 pass / 1 warn（跳过构建的提示） |
+| `python tools/consistency.py --skip-build` | 0 | 3 ok / 0 fail |
+
+**这次演练改掉了一条真问题**：原本的 Quick start 只有三条命令
+（build / test / run cmd/main），新读者照它走**永远看不到两个真实靶子**——
+而那是本项目全部说服力所在。现在的 Quick start 把
+`moon run adapters/mqtt/bin` 放在第二位，并注明"先看这条"。
+
+未覆盖：Windows 之外的平台（本次演练在 Windows）；首次需要下载依赖时的网络耗时
+（本机 registry 已有缓存）。
