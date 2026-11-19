@@ -179,7 +179,7 @@ moon run cmd/perf --target native --release
 
 每一项都验证过**能失败**；网络不可达记为 SKIP 而非 FAIL。
 
-这套门禁在**本项目**上实际拦下过：README 里过期的测试数（`31/31` 实为 39）、
+这套门禁在**本项目**上实际拦下过：README 里过期的测试数（`31/31` 实为 39）、 <!-- consistency:ignore -->
 与程序实际输出不符的 transcript（写了 `reconciled=true`，程序打印的是
 `matches=true`）、发布包里混进工作区成员、以及验收脚本把测试数报成 26（实为 39）。
 同一套工具在另一个项目上还拦下过重复的 ADR 编号、「0.3.1 已发布却写成未发布」等
