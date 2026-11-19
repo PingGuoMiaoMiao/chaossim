@@ -1,5 +1,16 @@
-// Transcript demo: the same scripted MQTT conversation under three fault
-// regimes, with the reconciliation invariant printed after each run.
+// Transcript demo: QoS1/QoS2 fault regimes for one client, then the
+// dual-client lane cut. Counters are printed as they actually ended; the
+// mid-session isolation row exists to SHOW the interleaving, its exact
+// outcome per seed is asserted nowhere - the suite in adapter_wbtest only
+// pins the seed-independent classes (D8 discipline).
+
+///|
+fn counters(node : Int32, s : @adapter.Scenario) -> String {
+  "node\{node}: issued=\{@adapter.issued_of(s.world, node)}" +
+  " acks=\{@adapter.acks_of(s.world, node)}" +
+  " inflight=\{@adapter.inflight(s.world, node)}" +
+  " matches=\{@adapter.inflight_matches(s.world, node)}"
+}
 
 ///|
 fn show(label : String, s : @adapter.Scenario) -> Unit {
@@ -9,30 +20,33 @@ fn show(label : String, s : @adapter.Scenario) -> Unit {
     println("   " + line)
   }
   println(
-    "   counters: issued=\{s.world.issued} acks_delivered=\{s.world.acks_delivered}" +
-    " inflight=\{s.world.core.session().inflight_count()}" +
-    " dropped=\{r.dropped} deferred=\{r.deferred}",
+    "   dropped=\{r.dropped} deferred=\{r.deferred}" +
+    " bad_events=\{s.world.bad_events}",
   )
+  println("   " + counters(0, s))
+}
+
+///|
+fn show_two(label : String, s : @adapter.Scenario) -> Unit {
+  let r = s.result
+  println("== \{label}")
+  for line in r.trace {
+    println("   " + line)
+  }
   println(
-    "   inflight_matches=\{@adapter.inflight_matches(s.world)}" +
-    " no_bad_events=\{@adapter.no_bad_events(s.world)}",
+    "   dropped=\{r.dropped} bad_events=\{s.world.bad_events}" +
+    " all_drained=\{@adapter.all_drained(s.world)}",
   )
+  println("   " + counters(0, s))
+  println("   " + counters(2, s))
 }
 
 ///|
 fn demos() -> Unit raise @sim.SimError {
-  show("clean", @adapter.run_scenario(7, 20, []))
+  show("qos1 clean", @adapter.run_scenario(7, 20, []))
   show(
-    "ack loss from step 3",
+    "qos1 ack loss from step 3",
     @adapter.run_scenario(7, 20, [@sim.loss(1, 0, 3)]),
-  )
-  show(
-    "ack delayed within window (slow to step 5, then healed)",
-    @adapter.run_scenario(7, 20, [@sim.delay_window(0, 3, 2, 5)]),
-  )
-  show(
-    "ack delayed forever (starvation)",
-    @adapter.run_scenario(7, 20, [@sim.delay(0, 3, 2)]),
   )
   show("qos2 full handshake", @adapter.run_scenario_ex(7, 30, [], 2, 1))
   show(
@@ -40,19 +54,38 @@ fn demos() -> Unit raise @sim.SimError {
     @adapter.run_scenario_ex(7, 30, [@sim.loss(1, 0, 6)], 2, 1),
   )
 
+  show_two("dual clients, clean wire", @adapter.run_multi(7, 60, [], 1, 1, 2))
+  show_two(
+    "partition([0]|[1]) from step 1: lane cut",
+    @adapter.run_multi(7, 60, [@sim.partition([0], [1], 1, -1)], 1, 1, 2),
+  )
+  show_two(
+    "partition([0]|[1]) from step 5: isolation lands mid-session (illustrative)",
+    @adapter.run_multi(7, 60, [@sim.partition([0], [1], 5, -1)], 2, 1, 2),
+  )
+
   let mut ok_seeds = 0
-  for seed = 1; seed <= 8; seed = seed + 1 {
-    let s = @adapter.run_scenario_ex(seed, 60, [], 2, 2)
-    let matched = @adapter.inflight_matches(s.world)
-    let clean_events = @adapter.no_bad_events(s.world)
-    let drained = s.world.core.session().inflight_count() == 0
-    if matched && clean_events && drained {
+  for seed = 1; seed <= 6; seed = seed + 1 {
+    let s = @adapter.run_multi(
+      seed,
+      60,
+      [@sim.partition([0], [1], 1, -1)],
+      1,
+      1,
+      2,
+    )
+    let a_ok = @adapter.inflight_matches(s.world, 0) &&
+      @adapter.acks_of(s.world, 0) == 0
+    let b_ok = @adapter.inflight_matches(s.world, 2) &&
+      @adapter.acks_of(s.world, 2) == 1
+    if a_ok && b_ok && @adapter.no_bad_events(s.world) {
       ok_seeds = ok_seeds + 1
     }
   }
   println(
-    "two concurrent qos2 handshakes, seeds 1..8: reconciled " +
-    ok_seeds.to_string() + "/8",
+    "lane-cut class across seeds 1..6: reconciled " +
+    ok_seeds.to_string() +
+    "/6",
   )
 }
 

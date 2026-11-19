@@ -73,9 +73,11 @@ let again = @sim.replay_verify(text, reply)
       首轮未发现库行为 bug——价值主张是可复核的等价类，不标题党）
 - [x] W2b：QoS2 四段握手（6 步收敛）、PUBCOMP 丢失钉死 WaitPubcomp、
       双 QoS2 并发交错 seeds 1..8 全部对账归零（调度顺序即乱序测试）
-- [ ] v0.3 / W2c：3 节点 + partition 场景；第二靶子（候选 `Zcxssxx/moonmq`
-      AMQP broker，无自带故障台）；`moonbitlang/async` 续作级调度 spike
-      （风险前置，不可行则收窄并写明）
+- [x] W2c：多客户端模型（客户端占偶数节点、broker=1）+ partition；
+      链路切断类 seeds 1..6 全对账，途中暴露并修掉"应答硬编码回 node0"
+      这个只有双客户端才会现形的真 bug（D9）
+- [ ] v0.3：第二靶子（候选 `Zcxssxx/moonmq` AMQP broker，无自带故障台）；
+      `moonbitlang/async` 续作级调度 spike（风险前置，不可行则收窄并写明）
 - [ ] v0.4：不变量钩子 + 对接 `moon_historycheck`/`lincheck` 的线性一致性示例（复用声明写明出处与许可证）
 - [ ] v1.0（12 月验收包）：发布 mooncakes 0.3.0（带真实靶子用例后首发）；
       申报材料见 docs/registration-dec.md

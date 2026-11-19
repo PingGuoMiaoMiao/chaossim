@@ -23,20 +23,21 @@
 - 内核：种子化投递调度 + 4 类故障（含窗口化 delay）+ 有界运行 + trace/计数
 - 重放工件：场景+结果自包含 JSON，`replay_verify` 换实现必报分歧
 - 真实靶子：moon-mqtt 适配器（应答全部走**库自己的编码器**），QoS1 + QoS2
-  四段握手 + 双消息并发交错（seeds 1..8 全对账）共 10 个联合不变量场景，
-  workspace 22/22 测试，`moon check --deny-warn` 零警告，公开历史自 11-19
+  四段握手 + 双消息并发交错（seeds 1..8）+ **多客户端 partition 隔离**
+  （seeds 1..6）共 13 个联合不变量场景，workspace 25/25 测试，
+  `moon check --deny-warn` 零警告，公开历史自 11-19
+- 多客户端重构中修复真 bug：broker 应答硬编码回 node0（单客户端永远测不出）
 - 诚实边界：至今未发现靶子的行为 bug；主张的是"故障下可复核的等价类 +
   对账不变量"（丢 ACK 与 broker 崩溃客户端不可区分、饿死场景 deferred=9
   仍可精确重放），不是 bug 标题党
 
 ## 本月计划（十二月赛验收前）
 
-1. 3 节点 + partition 场景（双客户端并行核心）
-2. 第二靶子接入（候选：`Zcxssxx/moonmq` AMQP broker，尚无自带故障台）
-3. 不变量接入 `moon_historycheck` 或 `lincheck`（复用声明：出处+许可证）
-4. `moonbitlang/async` 运行时级调度 spike：可行则做"真实 async 程序"接入，
+1. 第二靶子接入（候选：`Zcxssxx/moonmq` AMQP broker，尚无自带故障台）
+2. 不变量接入 `moon_historycheck` 或 `lincheck`（复用声明：出处+许可证）
+3. `moonbitlang/async` 运行时级调度 spike：可行则做"真实 async 程序"接入，
    不可行则如实收窄为纯迁移函数协议层，并把失败分析写进 decisions.md
-5. 发布 mooncakes 0.3.0（带真实靶子用例后首发）
+4. 发布 mooncakes 0.3.0（带真实靶子用例后首发）
 
 ## AI 使用与可解释性
 

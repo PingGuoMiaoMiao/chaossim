@@ -7,15 +7,27 @@ import {
 }
 
 // Values
-pub fn inflight_matches(World) -> Bool
+pub fn acks_of(World, Int32) -> Int32
+
+pub fn all_drained(World) -> Bool
+
+pub let broker_node : Int32
+
+pub fn inflight(World, Int32) -> Int32
+
+pub fn inflight_matches(World, Int32) -> Bool
+
+pub fn issued_of(World, Int32) -> Int32
 
 pub fn make_handler(World) -> (Int32, @sim.Msg) -> Array[@sim.Msg]
 
-pub fn new_world() -> (World, Array[@sim.Msg])
+pub fn new_world(Int32) -> (World, Array[@sim.Msg])
 
 pub fn no_bad_events(World) -> Bool
 
 pub fn register(World, Array[Int32]) -> Int32
+
+pub fn run_multi(Int32, Int32, Array[@sim.Fault], Int32, Int32, Int32) -> Scenario raise @sim.SimError
 
 pub fn run_scenario(Int32, Int32, Array[@sim.Fault]) -> Scenario raise @sim.SimError
 
@@ -35,11 +47,11 @@ pub struct Scenario {
 }
 
 pub(all) struct World {
-  core : @core.ClientCore
-  bfr : @core.Framer
+  cores : Array[@core.ClientCore]
+  bfors : Array[@core.Framer]
   mut frames : Array[Frame]
-  mut issued : Int32
-  mut acks_delivered : Int32
+  issued : Array[Int32]
+  acks_delivered : Array[Int32]
   mut bad_events : Int32
   mut app_publishes : Int32
   mut app_qos : Int32

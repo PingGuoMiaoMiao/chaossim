@@ -57,3 +57,20 @@ issue 或把等价类报告做成 PR。
 方法论注记：steps==6 与"step 6 丢 PUBCOMP 恰好钉住"两个断言一次通过（预测
 来自 QoS 状态机推演）；交错扫描的断言只写不变量与终局，不写 trace 逐行——
 后者留给 bin 的 transcript 展示，避免把调度顺序的美观误当契约。
+
+## W2c 首轮记录（多客户端 + partition，2026-11-19）
+
+| 场景 | 配置 | 结果（实测） |
+| --- | --- | --- |
+| 双客户端干净线路 | `run_multi(7, 60, [], qos=1, count=1, clients=2)` | 两条独立 QoS1 会话各自收敛：node0/node2 issued=1 acks=1 inflight=0，`all_drained=true` |
+| 链路切断（第 1 步起） | 同上 + `partition([0],[1],1,-1)` | node0 **从未建起会话**（issued=0），node2 照常完成；seeds 1..6 全 6/6 对账 |
+| 中途隔离（第 5 步起，示意） | `partition([0],[1],5,-1)`，QoS2 | node0 已发出 PUBLISH 被隔离（inflight 挂 1、acks=0），node2 完整握手成功；`all_drained=false` 正是 node0 造成的 |
+
+方法论要点：
+- **分区切断点必须与握手阶段解耦**才能写硬断言。切断点落在 CONNACK 窗口内时，
+  node0 的 `issued` 会因"是否已收到 CONNACK"而分叉，断言随 seed 漂移。测试因此
+  只钉"构造上 seed 无关"的两类：第 1 步切断（会话建不起来）与窗口内延迟恢复；
+  中途隔离只在 transcript 展示（同 D8 纪律）。
+- 本次重构暴露并修掉一个**只在双客户端下才现形**的真 bug：broker 应答原先
+  硬编码回 node 0，应回 `msg.from`。单客户端测试永远抓不到它——这是多客户端
+  投资的直接回报，已记入 decisions D9。
