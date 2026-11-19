@@ -1,0 +1,47 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "PingGuoMiaoMiao/chaossim-amqp1/src"
+
+import {
+  "PingGuoMiaoMiao/chaossim/sim",
+  "binhongcha/moonamqp1",
+}
+
+// Values
+pub fn credit_accounted(World, Int32) -> Bool
+
+pub fn make_handler(World) -> (Int32, @sim.Msg) -> Array[@sim.Msg]
+
+pub fn new_world(UInt32) -> (World, Array[@sim.Msg]) raise
+
+pub fn no_bad_events(World) -> Bool
+
+pub fn run_message_cycle(Int32, Int32, Array[@sim.Fault]) -> Scenario raise
+
+pub fn seed_send(World, Bytes, Bytes) -> Array[@sim.Msg]
+
+// Errors
+
+// Types and methods
+pub struct Frame {
+  bytes : Bytes
+}
+
+pub struct Scenario {
+  result : @sim.RunResult
+  world : World
+}
+
+pub(all) struct World {
+  app : @moonamqp1.Endpoint
+  svc : @moonamqp1.Endpoint
+  mut frames : Array[Frame]
+  sender : UInt32
+  mut sends : Int32
+  mut settled : Int32
+  mut received : Int32
+  mut bad_events : Int32
+}
+
+// Type aliases
+
+// Traits

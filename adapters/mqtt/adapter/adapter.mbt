@@ -38,6 +38,17 @@ pub(all) struct World {
   /// the scheduler, so replays stay byte-identical)
   mut app_publishes : Int32
   mut app_qos : Int32
+  /// per-client CONNECT count: a client's first CONNECT gets
+  /// session_present=0, later ones session_present=1 (a resumed session,
+  /// which is what the documented replay path expects). Per-client on
+  /// purpose: a single global counter made session_present depend on which
+  /// client the scheduler happened to deliver first (caught by the
+  /// dual-client test).
+  connects : Array[Int32]
+  /// PUBLISH frames the client re-emitted via `replay_bytes()` (DUP=1)
+  mut replays : Int32
+  /// replayed frames that actually carried the DUP flag
+  mut dups : Int32
 }
 
 ///|
@@ -97,6 +108,43 @@ fn maybe_publish(w : World, idx : Int32, out : Array[@sim.Msg]) -> Unit {
 }
 
 ///|
+/// The documented recovery move (their README §"持久会话恢复"): after a
+/// reconnect that reports `session_present=1`, re-emit the in-flight
+/// QoS1/2 frames with DUP set rather than publishing new work. This is the
+/// behaviour our fault scenarios exist to check, so it is a first-class
+/// mode rather than a comment.
+fn replay_inflight(w : World, idx : Int32, out : Array[@sim.Msg]) -> Unit {
+  for frame_bytes in w.cores[idx].replay_bytes() {
+    let slot = register(w, frame_bytes)
+    match @protocol.decode_packet(frame_bytes) {
+      Ok(@protocol.Publish(p)) => {
+        w.replays = w.replays + 1
+        if p.dup {
+          w.dups = w.dups + 1
+        }
+      }
+      _ => ()
+    }
+    out.push({ from: 2 * idx, to: broker_node, payload: slot, })
+  }
+}
+
+///|
+/// Dispatch a CONNACK: resumed sessions replay, fresh ones publish.
+fn on_connack(
+  w : World,
+  idx : Int32,
+  session_present : Bool,
+  out : Array[@sim.Msg],
+) -> Unit {
+  if session_present {
+    replay_inflight(w, idx, out)
+  } else {
+    maybe_publish(w, idx, out)
+  }
+}
+
+///|
 /// Client side of one scheduled delivery for client at `idx`.
 fn to_client(w : World, idx : Int32, frame : Frame) -> Array[@sim.Msg] {
   let out : Array[@sim.Msg] = []
@@ -104,7 +152,8 @@ fn to_client(w : World, idx : Int32, frame : Frame) -> Array[@sim.Msg] {
   let (events, bytes_out) = w.cores[idx].feed(frame.bytes)
   for e in events {
     match e {
-      @core.ConnackReceived(_) => maybe_publish(w, idx, out)
+      @core.ConnackReceived(connack) =>
+        on_connack(w, idx, connack.session_present, out)
       @core.PublishReceived(_) | @core.SubackReceived(_) => ()
       _ => w.bad_events = w.bad_events + 1
     }
@@ -125,9 +174,24 @@ fn to_client(w : World, idx : Int32, frame : Frame) -> Array[@sim.Msg] {
 ///|
 /// The ack (or nothing) the scripted broker owes for one client frame.
 /// Unrecognized/garbage frames earn a bad_events increment and no reply.
-fn broker_reply(w : World, frame : Frame) -> Array[Int32] {
+fn broker_reply(w : World, from_node : Int32, frame : Frame) -> Array[Int32] {
   match frame.kind {
-    1 => [0x20, 0x02, 0x00, 0x00]
+    1 => {
+      // per-client CONNECT count: the first is a fresh session, later ones
+      // resume. MQTT 3.1.1 CONNACK = 0x20, remaining length 2, ack flags,
+      // return code; bit 0 of the ack flags is session_present.
+      let idx = client_idx(from_node)
+      if idx >= 0 && idx < w.connects.length() {
+        w.connects[idx] = w.connects[idx] + 1
+        if w.connects[idx] == 1 {
+          [0x20, 0x02, 0x00, 0x00]
+        } else {
+          [0x20, 0x02, 0x01, 0x00]
+        }
+      } else {
+        [0x20, 0x02, 0x00, 0x00]
+      }
+    }
     3 =>
       match @protocol.decode_packet(frame.bytes) {
         Ok(@protocol.Publish(p)) =>
@@ -173,7 +237,7 @@ fn broker_reply(w : World, frame : Frame) -> Array[Int32] {
 /// dual-client ones can.
 fn to_broker(w : World, msg : @sim.Msg, frame : Frame) -> Array[@sim.Msg] {
   let out : Array[@sim.Msg] = []
-  let reply = broker_reply(w, frame)
+  let reply = broker_reply(w, msg.from, frame)
   if reply.length() > 0 {
     let slot = register(w, reply)
     out.push({ from: broker_node, to: msg.from, payload: slot, })
@@ -201,6 +265,14 @@ pub fn make_handler(w : World) -> @sim.Handler {
 pub struct Scenario {
   result : @sim.RunResult
   world : World
+  /// phase-A transcript for the two-phase recovery runner; for one-phase
+  /// runners this is a copy of `result` so callers never special-case it
+  phase_a : @sim.RunResult
+  /// acks delivered to client 0 at the END of phase A. The World is shared
+  /// and mutable, so phase B overwrites the live counter - without this
+  /// snapshot the "phase A left the message unsettled" claim would be
+  /// unobservable after the fact.
+  phase_a_acks : Int32
 }
 
 ///|
@@ -210,6 +282,7 @@ pub fn new_world(clients : Int32) -> (World, Array[@sim.Msg]) {
   let bfors : Array[@core.Framer] = []
   let issued : Array[Int32] = []
   let acks : Array[Int32] = []
+  let connect_counts : Array[Int32] = []
   let initial : Array[@sim.Msg] = []
   for i = 0; i < clients; i = i + 1 {
     let client_id = "chaossim-mqtt-" + i.to_string()
@@ -217,6 +290,7 @@ pub fn new_world(clients : Int32) -> (World, Array[@sim.Msg]) {
     bfors.push(@core.Framer::new())
     issued.push(0)
     acks.push(0)
+    connect_counts.push(0)
   }
   let w = {
     cores,
@@ -227,6 +301,9 @@ pub fn new_world(clients : Int32) -> (World, Array[@sim.Msg]) {
     bad_events: 0,
     app_publishes: 1,
     app_qos: 1,
+    connects: connect_counts,
+    replays: 0,
+    dups: 0,
   }
   for i = 0; i < clients; i = i + 1 {
     let connect_slot = register(w, w.cores[i].start())
@@ -257,7 +334,7 @@ pub fn run_multi(
     max_steps,
     faults,
   )
-  { result, world: w, }
+  { result, world: w, phase_a: result, phase_a_acks: acks_of(w, 0), }
 }
 
 ///|
@@ -279,6 +356,65 @@ pub fn run_scenario_ex(
   count : Int32,
 ) -> Scenario raise @sim.SimError {
   run_multi(seed, max_steps, faults, qos, count, 1)
+}
+
+///|
+/// Phase A -> Phase B recovery scenario (D12).
+///
+/// A fault is injected in phase A so the client is left with an unsettled
+/// in-flight message; phase B then does exactly what their README documents
+/// for a dropped connection: `on_transport_close()` + `reconnect_bytes()`,
+/// and on the resumed CONNACK (session_present=1) `replay_bytes()`.
+///
+/// The World persists across the two `run_bounded` calls, which is the
+/// point: the fault's aftermath has to survive into the recovery run for
+/// this to test anything. Both phases are separately seeded and separately
+/// recorded, so a failure tells you which phase broke.
+pub fn run_recovery(
+  seed : Int32,
+  max_steps : Int32,
+  phase_a_faults : Array[@sim.Fault],
+) -> Scenario raise @sim.SimError {
+  let (w, initial_a) = new_world(1)
+  let phase_a_initial : Array[@sim.Msg] = []
+  for m in initial_a {
+    phase_a_initial.push(m)
+  }
+  for m in seed_publish(w, 0, 0) {
+    phase_a_initial.push(m)
+  }
+  let tx_a = @sim.run_bounded(
+    make_handler(w),
+    phase_a_initial,
+    seed,
+    max_steps,
+    phase_a_faults,
+  )
+  let acks_after_a = acks_of(w, 0)
+  // transport died; the client notices and reconnects
+  w.cores[0].on_transport_close()
+  let connect_slot = register(w, w.cores[0].reconnect_bytes())
+  let initial_b : Array[@sim.Msg] = [
+    { from: 0, to: broker_node, payload: connect_slot, },
+  ]
+  let tx_b = @sim.run_bounded(make_handler(w), initial_b, seed + 1, max_steps, [])
+  // report phase B as the scenario trace; phase A is available via
+  // `phase_a` for assertions that care about where the fault landed
+  { result: tx_b, world: w, phase_a: tx_a, phase_a_acks: acks_after_a, }
+}
+
+///|
+/// One publish, spilled as scheduled messages (used by the recovery setup).
+pub fn seed_publish(w : World, idx : Int32, tag : Int32) -> Array[@sim.Msg] {
+  let out : Array[@sim.Msg] = []
+  publish_once(w, idx, out, tag)
+  out
+}
+
+///|
+/// CONNECT count seen from one client (1 = fresh, 2+ = resumed).
+pub fn connects_of(w : World, node : Int32) -> Int32 {
+  w.connects[client_idx(node)]
 }
 
 ///|

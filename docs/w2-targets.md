@@ -91,3 +91,21 @@ issue 或把等价类报告做成 PR。
 方法学收获：AMQP 的 `credit` 给了 **投递无关不变量** 的范例——断言"记账"而不是
 "送达"，在故障场景下才有意义。这条可以回灌到 MQTT 适配器的表述里（其
 `inflight == issued - acks` 就是同一类）。
+
+## W4 记录：恢复路径验证（2026-11-19）
+
+不只测"故障发生了"，而是测**文档承诺的恢复在故障后是否成立**。
+
+| 阶段 | 动作 | 实测 |
+| --- | --- | --- |
+| A | 正常发布一条 QoS1，`loss(1,0,from 3)` 吃掉 PUBACK | `drop 4: 1->0 #3 (loss)`；`phase_a_acks=0`，客户端挂在 1 条未结算 |
+| B | `on_transport_close()` + `reconnect_bytes()`，broker 回 `session_present=1` | 客户端走 `replay_bytes()`：`replays=1 dups=1`（DUP 位由 `decode_packet` 读出确认为 1）→ PUBACK → `inflight=0` |
+| 控制组 | 同形状但不注入故障 | `replays=0`（没有在途消息就没有重放），排除"无论如何都重放"的假通过 |
+| 种子扫描 | seeds 1..6 | 6/6 全部恢复：`connects=2 replays=1 dups=1 inflight=0 reconciled=true` |
+
+结论：moon-mqtt 的"断线重连 + 在途重放"在 ACK 丢失后**确实恢复**，且重放帧
+DUP 标记正确。这是本层能给出的最强一类证据——不是"我跑了一遍没崩"，而是
+"我把它的恢复语义在故障下逐项核对过了"。
+
+适配器自身的第二个真 bug（已修）：`connects` 做成全局计数会让双客户端下
+"谁先被调度"决定谁是恢复会话，`run_multi` 干净线路测试当场失败。教训写进 D12。

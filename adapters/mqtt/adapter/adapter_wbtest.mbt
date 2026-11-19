@@ -126,6 +126,67 @@ test "dual clients complete independently on a clean wire" {
 /// of a brittle assertion - D8 discipline.)
 
 ///|
+/// The recovery promise, checked under an injected fault (D12).
+///
+/// Phase A loses the PUBACK, so the client is left holding an unsettled
+/// in-flight message - the exact state their README says `replay_bytes()`
+/// exists for. Phase B then does the documented reconnect: `on_transport_
+/// close()`, `reconnect_bytes()`, and because the broker reports
+/// session_present=1, the client re-emits the unsettled PUBLISH with DUP=1
+/// instead of publishing new work.
+///
+/// Asserted from the first real run, not from hope: phase A ends with the
+/// ack dropped, phase B ends with inflight back to 0 and exactly one DUP
+/// frame replayed.
+test "ack loss is recovered by reconnect + replay with DUP set" {
+  let s = run_recovery(7, 30, faults1(@sim.loss(1, 0, 3)))
+  // phase A: the ack was the fault victim
+  assert_eq(s.phase_a.dropped, 1)
+  assert_eq(s.phase_a_acks, 0)
+  // phase B: one reconnect, one session-resumed CONNACK, one DUP replay
+  assert_eq(connects_of(s.world, 0), 2)
+  assert_eq(s.world.replays, 1)
+  assert_eq(s.world.dups, 1) // the replayed frame really carried DUP=1
+  // and the client is consistent again
+  assert_eq(acks_of(s.world, 0), 1)
+  assert_eq(inflight(s.world, 0), 0)
+  assert_eq(inflight_matches(s.world, 0), true)
+  assert_eq(no_bad_events(s.world), true)
+}
+
+///|
+test "recovery works for every seed 1..6" {
+  // The reconnect handshake frames are scheduled too, so this also proves
+  // the recovery does not depend on which frame the scheduler picks first.
+  for seed = 1; seed <= 6; seed = seed + 1 {
+    let s = run_recovery(seed, 30, faults1(@sim.loss(1, 0, 3)))
+    assert_eq(connects_of(s.world, 0), 2)
+    assert_eq(s.world.replays, 1)
+    assert_eq(s.world.dups, 1)
+    assert_eq(inflight(s.world, 0), 0)
+    assert_eq(inflight_matches(s.world, 0), true)
+    assert_eq(no_bad_events(s.world), true)
+  }
+}
+
+///|
+test "without the fault no replay happens (the control case)" {
+  // Same two-phase shape, clean phase A: nothing is left unsettled, so the
+  // resumed session has nothing to replay. This is the control that stops
+  // the recovery test from passing for a trivial reason.
+  let s = run_recovery(7, 30, [])
+  assert_eq(s.phase_a.dropped, 0)
+  assert_eq(s.phase_a_acks, 1) // already acked in phase A
+  assert_eq(s.world.replays, 0) // nothing in flight -> nothing to replay
+  assert_eq(inflight(s.world, 0), 0)
+  assert_eq(no_bad_events(s.world), true)
+}
+
+///|
+/// Partition from step 1 is seed-independent BY CONSTRUCTION: every A<->1
+/// frame bites immediately, so A never opens a conversation while B runs
+/// the full handshake - the lane-cut equivalence class without racing
+/// against when A's publish might get picked.
 test "partition from step 1 silences one client, peer converges" {
   let s = run_multi(7, 60, faults1(@sim.partition([0], [1], 1, -1)), 1, 1, 2)
   assert_eq(s.result.dropped >= 1, true)

@@ -135,3 +135,31 @@ CI 里仍然构建工作区成员（adapters/spikes）。理由：适配器是"�
 
 边界声明：握手（start/begin/attach/grant）同步完成、不进调度器。握手是固定
 交换，放进调度器只增加抖动不增加信息；被调度的是消息周期，故障在那里才有意义。
+
+## D12 - 恢复路径用"两阶段运行"验证，阶段 A 的计数必须快照
+
+目标：不只验证"故障发生了"，而是验证**库文档承诺的恢复路径在故障后真的能恢复**。
+moon-mqtt README 写的是：断线后 `reconnect()`，若 broker 回 `session_present=1`
+则按 `replay_bytes()` 重发在途 QoS1/2（DUP=1），而不是重新发新消息。
+
+实现要点三条：
+1. **两阶段两次 `run_bounded`，World 跨调用存活**。阶段 A 注入 `loss(1,0,from 3)`
+   让 PUBACK 消失，客户端留在"1 条未结算"；阶段 B 手工 `on_transport_close()`
+   + `reconnect_bytes()`，再把这次 CONNECT 喂进新的 run。用一次 run 做不到，
+   因为"断线"不是线上消息，是本地事件。
+2. **`Scenario.phase_a_acks` 快照**。World 是共享可变的，阶段 B 会把 `acks` 计数器
+   改成 1；不快照阶段 A 的 0，"阶段 A 确实没收到 ack"这句话在事后就无法观测。
+   第一次写测试时就踩了这个坑（断言 `acks_of == 0` 失败，因为读的是终态）。
+3. **控制组**：同样的两阶段形状但不注入故障，断言 `replays == 0`——否则恢复测试
+   可能是"无论如何都会重放"而假通过。
+
+实测（seeds 1..6 全绿）：阶段 A `drop 4: 1->0 #3 (loss)`；阶段 B
+`connects=2 replays=1 dups=1 inflight=0 reconciled=true`，且重放帧的 DUP 位
+经 `decode_packet` 读出来确认为 1。这条把"文档说能恢复"变成了"我们注入故障后
+它确实恢复了，并且重放帧标记正确"。
+
+顺带修的第二个真 bug（这次在**适配器**里，不是靶子里）：`connects` 一开始做成
+全局计数，导致双客户端下"谁的 CONNECT 先被调度"决定谁被当成恢复会话——
+`run_multi` 的干净线路测试立刻炸了（node0 issued=0）。改成按客户端计
+（`connects : Array[Int32]`，broker 从 `msg.from` 取索引）。这是"重放相关性"在
+适配器自身的又一次体现：任何跨客户端的全局计数器都是种子依赖。

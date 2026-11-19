@@ -64,6 +64,22 @@ fn demos() -> Unit raise @sim.SimError {
     @adapter.run_multi(7, 60, [@sim.partition([0], [1], 5, -1)], 2, 1, 2),
   )
 
+  let rec = @adapter.run_recovery(7, 30, [@sim.loss(1, 0, 3)])
+  println("== recovery: phase A (ack lost) then reconnect + replay")
+  println("   phase A:")
+  for line in rec.phase_a.trace {
+    println("     " + line)
+  }
+  println("   phase B:")
+  for line in rec.result.trace {
+    println("     " + line)
+  }
+  println(
+    "   connects=\{@adapter.connects_of(rec.world, 0)} replays=\{rec.world.replays}" +
+    " dups=\{rec.world.dups} inflight=\{@adapter.inflight(rec.world, 0)}" +
+    " reconciled=\{@adapter.inflight_matches(rec.world, 0)}",
+  )
+
   let mut ok_seeds = 0
   for seed = 1; seed <= 6; seed = seed + 1 {
     let s = @adapter.run_multi(

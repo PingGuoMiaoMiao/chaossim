@@ -1,0 +1,4 @@
+[PingGuoMiaoMiao/chaossim-mqtt] test adapter/adapter_wbtest.mbt:107 ("dual clients complete independently on a clean wire") failed: adapter/adapter_wbtest.mbt:111:3-111:38@PingGuoMiaoMiao/chaossim-mqtt FAILED: `0 != 1`
+diff:
+-0 +1
+Total tests: 15, passed: 14, failed: 1.

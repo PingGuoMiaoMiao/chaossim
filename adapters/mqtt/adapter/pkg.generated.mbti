@@ -13,6 +13,8 @@ pub fn all_drained(World) -> Bool
 
 pub let broker_node : Int32
 
+pub fn connects_of(World, Int32) -> Int32
+
 pub fn inflight(World, Int32) -> Int32
 
 pub fn inflight_matches(World, Int32) -> Bool
@@ -29,9 +31,13 @@ pub fn register(World, Array[Int32]) -> Int32
 
 pub fn run_multi(Int32, Int32, Array[@sim.Fault], Int32, Int32, Int32) -> Scenario raise @sim.SimError
 
+pub fn run_recovery(Int32, Int32, Array[@sim.Fault]) -> Scenario raise @sim.SimError
+
 pub fn run_scenario(Int32, Int32, Array[@sim.Fault]) -> Scenario raise @sim.SimError
 
 pub fn run_scenario_ex(Int32, Int32, Array[@sim.Fault], Int32, Int32) -> Scenario raise @sim.SimError
+
+pub fn seed_publish(World, Int32, Int32) -> Array[@sim.Msg]
 
 // Errors
 
@@ -44,6 +50,8 @@ pub struct Frame {
 pub struct Scenario {
   result : @sim.RunResult
   world : World
+  phase_a : @sim.RunResult
+  phase_a_acks : Int32
 }
 
 pub(all) struct World {
@@ -55,6 +63,9 @@ pub(all) struct World {
   mut bad_events : Int32
   mut app_publishes : Int32
   mut app_qos : Int32
+  connects : Array[Int32]
+  mut replays : Int32
+  mut dups : Int32
 }
 
 // Type aliases

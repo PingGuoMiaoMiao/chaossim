@@ -80,6 +80,9 @@ let again = @sim.replay_verify(text, reply)
       同一套内核零改动驱动两种协议：MQTT 3.1.1 客户端 + AMQP 1.0 端点对，
       31/31 测试。AMQP 给出"投递无关不变量"的范例：`credit_before - sends ==
       link_credit(now)` 在丢传输/丢结算/慢服务下全部成立（D11）
+- [x] W4：**恢复路径验证**——丢 PUBACK → 重连（`session_present=1`）→ `replay_bytes()`
+      重放 DUP=1 → 恢复归零，seeds 1..6 全绿；含"不注入故障则无重放"的控制组。
+      把"文档说能恢复"变成"注入故障后确实恢复了"（D12）
 - [ ] v0.3：`moonbitlang/async` 续作级调度 spike（风险前置，不可行则收窄并写明）
 - [ ] v0.4：不变量钩子 + 对接 `moon_historycheck`/`lincheck` 的线性一致性示例（复用声明写明出处与许可证）
 - [ ] v1.0（12 月验收包）：发布 mooncakes 0.3.0 —— 包已打好且干净
