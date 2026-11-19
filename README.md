@@ -16,7 +16,7 @@ shrink and attach to an issue.
 | --- | --- | --- |
 | 被测对象 | **生产代码本体**（你的 `(node, msg) -> outgoing` 处理函数就是真实现） | 不需要把协议重写成另一套“仿真模型” |
 | 调度 | 种子化确定性投递顺序 + 虚拟时钟 + 有界步数 | 同一 `(handler, initial, seed, plan)` ⇒ 同一 trace |
-| 故障 | crash / loss（定向链路）/ partition（分组，可愈合）/ delay（持有时限，可见慢节点活锁）| 故障类型封顶 4 种，超出宁缺毋滥；无效计划在第一步前 `InvalidFault` 快速失败 |
+| 故障 | crash / loss（定向链路）/ partition（分组，可愈合）/ delay 与 delay_window（永久慢 vs 窗口慢，D8）| 故障类型封顶 4 种，超出宁缺毋滥；无效计划在第一步前 `InvalidFault` 快速失败 |
 | 不变量 | 交付/丢弃/延迟计数、trace 逐行相等、有界收敛；`Replay` 工件 = 场景+结果自包含，换 handler 重放必报差异 | 线性一致性**不自研**，计划对接 `moon_historycheck` / `lincheck` |
 
 **明确不做**：真多进程、真网络包注入、任意 `moonbitlang/async` 程序的运行时
@@ -66,13 +66,16 @@ let again = @sim.replay_verify(text, reply)
 ## Roadmap（与验收对齐，只承诺能测的东西）
 
 - [x] v0.1：种子化投递调度器 + crash 计划 + trace/计数；确定性测试
-- [x] v0.2：loss / partition（可愈合）/ delay 故障；`Replay` JSON 工件与
+- [x] v0.2：loss / partition（可愈合）/ delay 与 delay_window 故障；`Replay` JSON 工件与
       `replay_verify` 对账；`SimError`（code/message）；12 项契约测试
-- [ ] v0.3：**spike（风险前置）**：`moonbitlang/async` 续作级调度（timers/channel 虚拟时间）；
-      可行则做"真实 async handler"适配层，不可行则收窄为纯迁移函数并写进 README
-- [ ] v0.4：不变量钩子 + 对接 `moon_historycheck` 的线性一致性示例（复用声明写明出处与许可证）
-- [ ] v1.0（12 月验收包）：对 ≥2 个生态项目（候选：`moonbitstack/moonraft`、
-      `Duckweed/moon-mqtt`）出适配 + 真实发现记录（issue 链接）
+- [x] W2 首轮：`adapters/mqtt` 在调度器下跑**真实** moon-mqtt ClientCore，
+      5 种故障场景的记账不变量全绿（docs/w2-targets.md 有逐条 transcript；
+      首轮未发现库行为 bug——价值主张是可复核的等价类，不标题党）
+- [ ] v0.3 / W2b：QoS2 四段握手 + 3 节点 partition + 乱序重放；第二靶子；
+      `moonbitlang/async` 续作级调度 spike（风险前置，不可行则收窄并写明）
+- [ ] v0.4：不变量钩子 + 对接 `moon_historycheck`/`lincheck` 的线性一致性示例（复用声明写明出处与许可证）
+- [ ] v1.0（12 月验收包）：发布 mooncakes 0.3.0（带真实靶子用例后首发）；
+      申报材料见 docs/registration-dec.md
 
 ## 开发过程与 AI 可解释性
 
