@@ -39,8 +39,8 @@
 ## 本月计划（十二月赛验收前）
 
 1. 不变量接入 `moon_historycheck` 或 `lincheck`（复用声明：出处+许可证）
-3. `moonbitlang/async` 运行时级调度 spike：可行则做"真实 async 程序"接入，
-   不可行则如实收窄为纯迁移函数协议层，并把失败分析写进 decisions.md
+3. ~~`moonbitlang/async` 运行时级调度 spike~~ **已完成并判定不可行**，附行号证据
+   （docs/v0.3-async-verdict.md）：不注入时钟即无法重放，范围维持 sans-I/O
 4. 发布 mooncakes 0.3.0（带真实靶子用例后首发）
 
 ## AI 使用与可解释性

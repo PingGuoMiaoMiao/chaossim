@@ -1,0 +1,31 @@
+v0.3 spike: runtime-level deterministic scheduling is NOT achievable
+
+Risk-first item closed with a negative but evidence-backed answer
+(docs/v0.3-async-verdict.md): not "we did not get to it" but "we checked and
+here is why it cannot work today".
+
+1. TIME IS NOT INJECTABLE. Timers anchor on now() (timer.mbt:28,
+   event_loop.mbt:306) and now() is a fixed C FFI import on native
+   (event_loop.mbt:195, the get_ms_since_epoch import). An external event
+   loop can decide how long poll() waits, but cannot supply the clock, so
+   the same seed can wake a coroutine on a different tick. That alone kills
+   the byte-identical-replay promise this project sells.
+2. THE COROUTINE SCHEDULER IS PRIVATE. scheduler.mbt declares
+   "priv struct Scheduler" and exposes only current_coroutine(),
+   has_immediately_ready_task(), reschedule(), all_coroutines() - there is
+   no "run in this order" entry point.
+3. NATIVE ONLY, with a hostile callback contract. event_loop.js.mbt:25 makes
+   set_external_event_loop a literal ignore(); the wakeup callback must call
+   C FFI directly and perform no MoonBit refcounting.
+
+There IS a real hook (pub(open) trait ExternalEventLoop plus
+set_external_event_loop, proven by their own external_loop_test), so the
+honest layering is recorded in the README: sans-I/O state machines are
+replayable (what we ship); event injection of a real async program is at
+best semi-deterministic (native only) and will not be sold as replay.
+
+Side benefit: this retroactively justifies the target choice - both
+libraries separate a pure computational core precisely to escape these
+runtime constraints.
+
+34/34 tests, deny-warn clean, registration plan item struck through.

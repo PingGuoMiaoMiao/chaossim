@@ -163,3 +163,23 @@ moon-mqtt README 写的是：断线后 `reconnect()`，若 broker 回 `session_p
 `run_multi` 的干净线路测试立刻炸了（node0 issued=0）。改成按客户端计
 （`connects : Array[Int32]`，broker 从 `msg.from` 取索引）。这是"重放相关性"在
 适配器自身的又一次体现：任何跨客户端的全局计数器都是种子依赖。
+
+## D13 - 运行时级确定性调度：判定不可行，范围维持 sans-I/O
+
+风险前置项做完了，结论是否定的，依据带行号（详见 docs/v0.3-async-verdict.md）：
+1. `now()` 在 native 上是固定 C FFI 导入（`event_loop.mbt:195`
+   `"time/get_ms_since_epoch"`），定时器以它为锚（`timer.mbt:28`、
+   `event_loop.mbt:306`）。外部事件循环能决定 `poll` 等多久，**改不了时间**。
+2. 协程 `Scheduler` 是 `priv struct`，公开面只有查询与 `reschedule()`，
+   没有"按给定顺序执行"的入口。
+3. `set_external_event_loop` 在 JS 后端是空实现（`event_loop.js.mbt:25` 直接
+   `ignore`），仅 native 可用；唤醒回调还要求"只调 C FFI 且不做引用计数"。
+
+所以"接管调度 → 逐字节重放真实 async 程序"这条走不通。**不做**第 3 层，
+也不把"事件注入"（native only、半确定性）包装成"可重放"。这条取舍写进
+README 的边界表，评审可以看到我们主动否掉了自己的扩张冲动。
+
+副产品：反证了两个靶子选型是对的——它们把纯计算核心单独拆出来
+（moon-mqtt `core/` 四后端可测、MoonAMQP1 明确 sans-I/O 无内置 broker），
+正是为了绕开上面这些运行时约束。若哪天 `now()` 可注入，重新评估的改动点
+是运行时本身，不是本项目内核。

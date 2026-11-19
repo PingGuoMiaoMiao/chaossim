@@ -20,8 +20,10 @@ shrink and attach to an issue.
 | 不变量 | 交付/丢弃/延迟计数、trace 逐行相等、有界收敛；`Replay` 工件 = 场景+结果自包含，换 handler 重放必报差异 | 线性一致性**不自研**，计划对接 `moon_historycheck` / `lincheck` |
 
 **明确不做**：真多进程、真网络包注入、任意 `moonbitlang/async` 程序的运行时
-级截停（见 docs/pre-research.md 的风险分析；若 W1 spike 证明可控，会作为
-v0.3+ 的显式扩展点重新立项说明）。
+级截停。v0.3 spike 已给出裁决与行号证据
+（[docs/v0.3-async-verdict.md](docs/v0.3-async-verdict.md)）：运行时不提供可注入的
+时钟，协程调度器私有，外部事件循环仅 native。因此本项目只宣称
+"sans-I/O 状态机可逐字节重放"；"事件注入"即便将来实现也只是半确定性。
 
 ## 外部基线（评审准则第 03 条要求，先摆在这里）
 
@@ -83,7 +85,10 @@ let again = @sim.replay_verify(text, reply)
 - [x] W4：**恢复路径验证**——丢 PUBACK → 重连（`session_present=1`）→ `replay_bytes()`
       重放 DUP=1 → 恢复归零，seeds 1..6 全绿；含"不注入故障则无重放"的控制组。
       把"文档说能恢复"变成"注入故障后确实恢复了"（D12）
-- [ ] v0.3：`moonbitlang/async` 续作级调度 spike（风险前置，不可行则收窄并写明）
+- [x] v0.3 spike：**运行时级确定性调度判定不可行**，附行号证据
+      （`now()` 是固定 C FFI、`Scheduler` 私有、外部事件循环仅 native 且 JS 空实现）。
+      范围维持 sans-I/O；同时明确"事件注入"最多半确定性，不冒充可重放
+      （[docs/v0.3-async-verdict.md](docs/v0.3-async-verdict.md)，D13）
 - [ ] v0.4：不变量钩子 + 对接 `moon_historycheck`/`lincheck` 的线性一致性示例（复用声明写明出处与许可证）
 - [ ] v1.0（12 月验收包）：发布 mooncakes 0.3.0 —— 包已打好且干净
       （`moon package` 通过、zip 内 0 条工作区成员泄漏），只差维护者执行
