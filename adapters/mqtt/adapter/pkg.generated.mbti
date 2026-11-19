@@ -1,0 +1,46 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "PingGuoMiaoMiao/chaossim-mqtt/adapter"
+
+import {
+  "Duckweed/moon-mqtt/core",
+  "PingGuoMiaoMiao/chaossim/sim",
+}
+
+// Values
+pub fn inflight_matches(World) -> Bool
+
+pub fn make_handler(World) -> (Int32, @sim.Msg) -> Array[@sim.Msg]
+
+pub fn new_world() -> (World, Array[@sim.Msg])
+
+pub fn no_bad_events(World) -> Bool
+
+pub fn register(World, Array[Int32]) -> Int32
+
+pub fn run_scenario(Int32, Int32, Array[@sim.Fault]) -> Scenario raise @sim.SimError
+
+// Errors
+
+// Types and methods
+pub struct Frame {
+  bytes : Array[Int32]
+  kind : Int32
+}
+
+pub struct Scenario {
+  result : @sim.RunResult
+  world : World
+}
+
+pub(all) struct World {
+  core : @core.ClientCore
+  bfr : @core.Framer
+  mut frames : Array[Frame]
+  mut issued : Int32
+  mut acks_delivered : Int32
+  mut bad_events : Int32
+}
+
+// Type aliases
+
+// Traits
