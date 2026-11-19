@@ -4,3 +4,6 @@ _build/
 
 # moon's dependency download cache (local only)
 .repos/
+
+# scratch commit-message files
+_msg.txt
