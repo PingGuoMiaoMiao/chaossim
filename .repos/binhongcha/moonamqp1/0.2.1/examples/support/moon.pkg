@@ -1,3 +1,0 @@
-import {
-  "binhongcha/moonamqp1" @amqp,
-}

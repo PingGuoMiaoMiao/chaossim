@@ -1,3 +1,6 @@
 _build/
 .mooncakes/
 *.tmp
+
+# moon's dependency download cache (local only)
+.repos/
