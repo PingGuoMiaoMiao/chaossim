@@ -7,8 +7,25 @@ it is* (virtual clock), and *which node is down* (crash plan). Every run is
 replayable byte-for-byte from its seed and produces a trace you can diff,
 shrink and attach to an issue.
 
-这是为 2026 MoonBit 年度黑客松（Q2 赛季，12 月赛申报）新建的项目。立项调研与
-占位核对见 [docs/pre-research.md](docs/pre-research.md)。
+`v0.3.0` · 39 项测试全绿 · 验收自检 8 PASS / 0 WARN · MIT · CI 覆盖库 + 两个适配器
+
+## 你会拿到什么
+
+一次注入故障的运行，输出就是这样（真实转录，`moon run adapters/mqtt/bin`）：
+
+```
+== qos1 ack loss from step 3
+   send 1: 0->1 #0
+   send 2: 1->0 #1
+   send 3: 0->1 #2
+   drop 4: 1->0 #3 (loss)          <- 注入：PUBACK 被丢弃
+   dropped=1 deferred=0 bad_events=0
+   node0: issued=1 acks=0 inflight=1 matches=true
+```
+（逐字转录，未改格式；`matches=true` 就是记账自洽：`inflight == issued - acks`）
+
+再往下一步就是恢复：重连（`session_present=1`）-> 靶子文档里的 `replay_bytes()`
+-> 重放帧带 DUP=1 -> `inflight=0`。每一步都有断言，换实现会报分歧。
 
 ## 它是什么 / 不是什么
 
@@ -16,7 +33,7 @@ shrink and attach to an issue.
 | --- | --- | --- |
 | 被测对象 | **生产代码本体**（你的 `(node, msg) -> outgoing` 处理函数就是真实现） | 不需要把协议重写成另一套“仿真模型” |
 | 调度 | 种子化确定性投递顺序 + 虚拟时钟 + 有界步数 | 同一 `(handler, initial, seed, plan)` ⇒ 同一 trace |
-| 故障 | crash / loss（定向链路）/ partition（分组，可愈合）/ delay 与 delay_window（永久慢 vs 窗口慢，D8）| 故障类型封顶 4 种，超出宁缺毋滥；无效计划在第一步前 `InvalidFault` 快速失败 |
+| 故障 | crash / loss（定向链路）/ partition（分组，可愈合）/ delay 与 delay_window（永久慢 vs 窗口慢）| 故障类型封顶 4 种，超出宁缺毋滥；无效计划在第一步前 `InvalidFault` 快速失败 |
 | 不变量 | 交付/丢弃/延迟计数、trace 逐行相等、有界收敛；`Replay` 工件 = 场景+结果自包含，换 handler 重放必报差异 | 线性一致性**不自研**，计划对接 `moon_historycheck` / `lincheck` |
 
 **明确不做**：真多进程、真网络包注入、任意 `moonbitlang/async` 程序的运行时
@@ -38,6 +55,12 @@ shrink and attach to an issue.
 一句话基线主张（README 第一屏承诺，验收时逐条对数）：**生态里有“仿真你的模型”
 （moonlab）和“检查你的历史”（lincheck/historycheck），但没有“在你自己的代码上
 注入调度与故障”的那一层。chaossim 补这层，并给出可复跑证据。**
+
+## 背景
+
+为 2026 MoonBit 年度黑客松（Q2 赛季，12 月赛申报）新建。立项调研与占位核对见
+[docs/pre-research.md](docs/pre-research.md)，申报一页纸见
+[docs/registration-dec.md](docs/registration-dec.md)。
 
 ## Quick start
 
