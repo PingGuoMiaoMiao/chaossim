@@ -165,6 +165,26 @@ moon run cmd/perf --target native --release
 
 [CHANGELOG.md](CHANGELOG.md) 按**能力**组织（不是 git log 的搬运），每条带可复跑命令与 commit；被否决的方向与已知限制也记在里面。
 
+## 文档为什么可信
+
+文档会说谎——本项目自己的 README 就曾贴出与程序实际输出不符的 transcript。
+因此这里的每一条可核实主张都挂在门禁上：
+
+| 门禁 | 抓什么 |
+| --- | --- |
+| `tools/consistency.py` | 测试数/ADR 数/ADR 编号/相对链接/引用的 commit 是否存在/**贴出的输出是否逐字为真** |
+| `tools/acceptance.py` | 赛事验收六条（MoonBit 为主、历史、可运行、许可、AI 可解释等） |
+| `--with-publish` | 成品包解压后能否通过检查（抓"工作区能跑、打包后坏"） |
+| `--with-registry` | 关于已发布版本/下载数的说法是否与 mooncakes.io 一致 |
+
+每一项都验证过**能失败**；网络不可达记为 SKIP 而非 FAIL。
+
+这套门禁在**本项目**上实际拦下过：README 里过期的测试数（`31/31` 实为 39）、
+与程序实际输出不符的 transcript（写了 `reconciled=true`，程序打印的是
+`matches=true`）、发布包里混进工作区成员、以及验收脚本把测试数报成 26（实为 39）。
+同一套工具在另一个项目上还拦下过重复的 ADR 编号、「0.3.1 已发布却写成未发布」等
+——战果分开记，不混算。
+
 ## 证据索引
 
 [docs/evidence.md](docs/evidence.md) 把每一条对外主张映射到**一条复跑命令**和
