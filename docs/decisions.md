@@ -375,3 +375,19 @@ docmunch 的 `tools/`、以及 `moonbit-hackathon-acceptance` 技能的
 SKIP 与 PASS 在表格里分开计数，不混为一谈。）
 
 CI 里两个独立步骤合并成一个 Self-check 步骤——少一个会漂的脚手架。
+
+## D24 - 发布就绪门禁：`moon publish --dry-run` 不需要登录，而且会解压重检
+
+原本以为"发布前验证"必须真的 publish，或者至少需要登录。实测发现
+`moon publish --dry-run` **不需要登录**就能完成三件事：`moon check` → 打包 →
+**把包解压到临时目录再跑一遍 `moon check`** → 报 `Server status: 202 Accepted`。
+
+中间那步是关键：它抓的正是"工作区能跑、打包后坏掉"这一类问题（工作区成员被打进
+包、被引用的文件被 `.moonignore` 排除、路径依赖没写进 manifest……）。本项目的
+`.moonignore` 与工作区结构恰好属于最容易出这类问题的形态。
+
+因此做成自检的可选项 `--with-publish`（默认不开：它需要联网问一次 registry）。
+失败路径**验证过**：临时把 `sim/replay.mbt` 加进 `.moonignore`，工作区仍能过，
+而 `--with-publish` 立刻 `FAIL dry-run: moon check failed`，退出码 1。
+
+CI 里不启用这一项（CI 不该依赖 registry 可达）；它属于"发布前手动跑一次"的门。

@@ -78,6 +78,8 @@ moon run cmd/main --target native            # 最小内核演示：同种子重
 
 # 自检：一条命令看全部状态（验收六条 + 文档与代码一致性）
 python tools/selfcheck.py
+# 可选加测：打包就绪（解压成品包再检查一遍，不上传、不需要登录）
+python tools/selfcheck.py --with-publish
 ```
 
 注意 `--target native` 别省：不带 target 时 `moon test` 会**按后端分别报告**
