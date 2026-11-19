@@ -34,6 +34,11 @@ pub(all) struct World {
   /// events the scenario never expected (framer/malformed/unknown) —
   /// the library should never produce these in a scripted flow
   mut bad_events : Int32
+  /// the app's on-connack behavior: how many publishes at which QoS level.
+  /// Fixed before the run (never touched by the scheduler), so replays
+  /// stay byte-identical.
+  mut app_publishes : Int32
+  mut app_qos : Int32
 }
 
 ///|
@@ -52,10 +57,17 @@ fn note_inbound(w : World, kind : Int32) -> Unit {
 }
 
 ///|
-/// The app-on-connack move: when the client just got CONNACK, publish one
-/// QoS1 frame, exactly what their browser glue does in `on_connack` demos.
-fn maybe_publish(w : World, out : Array[@sim.Msg]) -> Unit {
-  let pub_bytes = w.core.publish("device/accel", [0x01, 0x02], @protocol.qos1())
+/// The app-on-connack move: when the client just got CONNACK, publish
+/// `app_publishes` frames at `app_qos` — what their browser glue does in
+/// `on_connack` demos, just parameterized. More than one publish means the
+/// handshake frames of several QoS2 conversations interleave in the queue
+/// and the scheduler's pick order becomes the reorder test.
+fn publish_once(w : World, out : Array[@sim.Msg], tag : Int32) -> Unit {
+  let qos = match @protocol.qos_from_int(w.app_qos) {
+    Some(q) => q
+    None => abort("app_qos out of range")
+  }
+  let pub_bytes = w.core.publish("device/accel", [0x01, tag], qos)
   if pub_bytes.length() > 0 {
     let slot = register(w, pub_bytes)
     match @protocol.decode_packet(pub_bytes) {
@@ -66,6 +78,13 @@ fn maybe_publish(w : World, out : Array[@sim.Msg]) -> Unit {
       _ => ()
     }
     out.push({ from: 0, to: 1, payload: slot, })
+  }
+}
+
+///|
+fn maybe_publish(w : World, out : Array[@sim.Msg]) -> Unit {
+  for i = 0; i < w.app_publishes; i = i + 1 {
+    publish_once(w, out, i)
   }
 }
 
@@ -184,19 +203,38 @@ pub fn new_world() -> (World, Array[@sim.Msg]) {
     issued: 0,
     acks_delivered: 0,
     bad_events: 0,
+    app_publishes: 1,
+    app_qos: 1,
   }
   let connect_slot = register(w, w.core.start())
   (w, [{ from: 0, to: 1, payload: connect_slot, }])
 }
 
 ///|
-/// Run one scenario under the scheduler with the given faults.
+/// Run one scenario under the scheduler with the given faults (QoS1, one
+/// publish — the historical default).
 pub fn run_scenario(
   seed : Int32,
   max_steps : Int32,
   faults : Array[@sim.Fault],
 ) -> Scenario raise @sim.SimError {
+  run_scenario_ex(seed, max_steps, faults, 1, 1)
+}
+
+///|
+/// The QoS2 / multi-publish variant. `qos` selects the app publish level
+/// (1 or 2); `count > 1` puts several handshakes in flight at once so
+/// delivery interleaving is tested by the seeded scheduler order.
+pub fn run_scenario_ex(
+  seed : Int32,
+  max_steps : Int32,
+  faults : Array[@sim.Fault],
+  qos : Int32,
+  count : Int32,
+) -> Scenario raise @sim.SimError {
   let (w, initial) = new_world()
+  w.app_qos = qos
+  w.app_publishes = count
   let result = @sim.run_bounded(
     make_handler(w),
     initial,

@@ -42,6 +42,18 @@ loss（丢 PUBACK）/ delay（晚到 PUBCOMP）/ 重放（reconnect_bytes 后再
 诚实结论：首轮未发现 moon-mqtt 的行为 bug（其 QoS1 路径在注入下记账自洽）。
 价值主张不依赖"发现 bug"而依赖"**可复核的等价类与不变量**"：饿死与丢失
 在客户端侧不可区分、对账式不变量在全部故障下成立——这些是任何人可以
-`moon run adapters/mqtt/bin` 复跑的。下一步（W2b）：3 节点 + partition
-场景与 QoS2 四段握手，把注入面推到乱序/重放；届时才谈给上游提 issue 或
-把等价类报告做成 PR。
+`moon run adapters/mqtt/bin` 复跑的。下一步（W2b）：QoS2 四段握手场景与
+多消息交错扫描（已完成，见下），3 节点 partition 待做；届时才谈给上游提
+issue 或把等价类报告做成 PR。
+
+## W2b 首轮记录（QoS2，2026-11-19）
+
+| 场景 | 配置 | 结果 |
+| --- | --- | --- |
+| QoS2 完整握手 | `run_scenario_ex(7, 30, [], qos=2, count=1)` | 恰好 6 步收敛：CONNECT→CONNACK→PUBLISH→PUBREC→PUBREL→PUBCOMP；仅 PUBCOMP(kind 7) 清在途；对账成立 |
+| PUBCOMP 丢失 | 同上 + `loss(1,0,from 6)` | 卡死在 WaitPubcomp：inflight 恒 1、acks_delivered=0，`inflight == issued − acks` 仍成立 |
+| 双 QoS2 并发交错 | `count=2`，seeds 1..8 | 8/8 全部：握手链完全交叉调度后仍收敛归零、无坏事件、对账成立——**调度顺序即乱序测试**，无一条 seed 触发记账漂移 |
+
+方法论注记：steps==6 与"step 6 丢 PUBCOMP 恰好钉住"两个断言一次通过（预测
+来自 QoS 状态机推演）；交错扫描的断言只写不变量与终局，不写 trace 逐行——
+后者留给 bin 的 transcript 展示，避免把调度顺序的美观误当契约。
