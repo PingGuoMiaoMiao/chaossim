@@ -391,3 +391,22 @@ CI 里两个独立步骤合并成一个 Self-check 步骤——少一个会漂�
 而 `--with-publish` 立刻 `FAIL dry-run: moon check failed`，退出码 1。
 
 CI 里不启用这一项（CI 不该依赖 registry 可达）；它属于"发布前手动跑一次"的门。
+
+## D25 - 关于外部世界的主张，去问外部世界（`--with-registry`）
+
+上一轮发现六份文档同时声称"0.3.1 未发布"，而 registry 上它已存在数日；下载数也
+写成 35（实为 44）。根因不是笔误，而是**信任了一份描述外部世界的内部文档**。
+
+于是把这件事也做成检查：`tools/consistency.py --with-registry` 直接查
+`mooncakes.io/api/v0/manifest/<module>`，然后核对 `docs/adoption.md` 里的
+"已发布版本"是否包含 latest、下载数是否**不超过**实际值（下载只增不减，报大是错、
+报小只是过期）。
+
+三条设计约束：
+1. **网络问题一律 SKIP，绝不 FAIL**——把"问不到"当成"答错了"，会让门禁变成
+   狼来了；
+2. 下载数只查"报大"（`claimed > actual` 才失败），因为数字会涨，允许偏保守；
+3. 默认关闭、CI 不启用。它是发布前手动跑的门，不是每次提交的门。
+
+失败路径验证过：把 adoption.md 的下载数改成 99，立刻
+`FAIL Registry: adoption.md claims 99 downloads, registry says 44`，退出码 1。

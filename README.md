@@ -80,6 +80,8 @@ moon run cmd/main --target native            # 最小内核演示：同种子重
 python tools/selfcheck.py
 # 可选加测：打包就绪（解压成品包再检查一遍，不上传、不需要登录）
 python tools/selfcheck.py --with-publish
+# 可选加测：关于 registry 的说法是否属实（查 manifest API，网络失败记为 SKIP）
+python tools/selfcheck.py --with-registry
 ```
 
 注意 `--target native` 别省：不带 target 时 `moon test` 会**按后端分别报告**
