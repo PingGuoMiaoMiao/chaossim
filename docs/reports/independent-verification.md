@@ -46,7 +46,21 @@ moon run adapters/amqp1/bin --target native    # AMQP 1.0 transcript
 `dups=1` 是把重放帧用 `decode_packet` 解回来读 `dup` 字段得到的，不是推断。
 控制组（同样两阶段但不注入故障）得到 `replays=0`，排除"无论如何都重放"。
 
-**结论：该恢复路径在注入故障后确实恢复，且重放帧 DUP 标记正确。**
+QoS2 走的是**另一条恢复分支**，单独验证：注入 `loss(1,0,from 6)` 吃掉 PUBCOMP
+后，客户端停在 WaitPubcomp。重连（`session_present=1`）后：
+
+```
+阶段 A: CONNECT → CONNACK → PUBLISH → PUBREC → PUBREL → drop 6 PUBCOMP (loss)
+阶段 B: CONNECT → CONNACK(session_present=1) → PUBREL(重放) → PUBCOMP
+结果:   connects=2 replays=0 replays_pubrel=1 dups=0 inflight=0 reconciled=true
+```
+
+注意 `replays=0` 且 `replays_pubrel=1`：**重发的是 PUBREL 而不是 PUBLISH**，
+与 QoS1 分支相反；`dups=0` 也是正确的，因为 MQTT 3.1.1 只有 PUBLISH 带 DUP 位。
+seeds 1..6 全绿。
+
+**结论：该恢复路径在注入故障后确实恢复；两个 QoS 分支各自的重放帧类型都正确
+（QoS1 重发带 DUP 的 PUBLISH，QoS2 重发 PUBREL）。**
 
 ### 未覆盖
 

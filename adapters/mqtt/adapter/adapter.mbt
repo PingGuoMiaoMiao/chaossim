@@ -49,6 +49,11 @@ pub(all) struct World {
   mut replays : Int32
   /// replayed frames that actually carried the DUP flag
   mut dups : Int32
+  /// replayed PUBREL frames: a QoS2 delivery stuck in WaitPubcomp resumes by
+  /// re-sending PUBREL, not by re-sending PUBLISH - a different branch of the
+  /// documented replay path, worth its own counter so it cannot be confused
+  /// with the QoS1 case
+  mut replays_pubrel : Int32
 }
 
 ///|
@@ -123,6 +128,7 @@ fn replay_inflight(w : World, idx : Int32, out : Array[@sim.Msg]) -> Unit {
           w.dups = w.dups + 1
         }
       }
+      Ok(@protocol.Pubrel(_)) => w.replays_pubrel = w.replays_pubrel + 1
       _ => ()
     }
     out.push({ from: 2 * idx, to: broker_node, payload: slot, })
@@ -304,6 +310,7 @@ pub fn new_world(clients : Int32) -> (World, Array[@sim.Msg]) {
     connects: connect_counts,
     replays: 0,
     dups: 0,
+    replays_pubrel: 0,
   }
   for i = 0; i < clients; i = i + 1 {
     let connect_slot = register(w, w.cores[i].start())
@@ -375,7 +382,22 @@ pub fn run_recovery(
   max_steps : Int32,
   phase_a_faults : Array[@sim.Fault],
 ) -> Scenario raise @sim.SimError {
+  run_recovery_ex(seed, max_steps, phase_a_faults, 1)
+}
+
+///|
+/// Same two-phase recovery, with the app's publish QoS selectable. QoS2 is a
+/// genuinely different recovery branch: a delivery stuck in WaitPubcomp
+/// resumes by re-sending PUBREL, so the assertion is `replays_pubrel == 1`
+/// and `replays == 0` - the opposite of the QoS1 case.
+pub fn run_recovery_ex(
+  seed : Int32,
+  max_steps : Int32,
+  phase_a_faults : Array[@sim.Fault],
+  qos : Int32,
+) -> Scenario raise @sim.SimError {
   let (w, initial_a) = new_world(1)
+  w.app_qos = qos
   let phase_a_initial : Array[@sim.Msg] = []
   for m in initial_a {
     phase_a_initial.push(m)

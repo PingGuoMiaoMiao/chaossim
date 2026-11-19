@@ -225,3 +225,38 @@ test "partition lane-cut holds across seeds 1..6" {
     assert_eq(no_bad_events(s.world), true)
   }
 }
+
+///|
+/// QoS2 has a DIFFERENT recovery branch, and this is the test that pins the
+/// difference: a delivery stuck in WaitPubcomp resumes by re-sending PUBREL
+/// (kind 6, which carries no DUP flag in MQTT 3.1.1), NOT by re-sending
+/// PUBLISH. So the expected counters are replays=0 / replays_pubrel=1 /
+/// dups=0 - the mirror image of the QoS1 recovery test above.
+test "qos2 pubcomp loss recovers by replaying PUBREL, not PUBLISH" {
+  let s = run_recovery_ex(7, 40, faults1(@sim.loss(1, 0, 6)), 2)
+  // phase A: the PUBCOMP was the victim (step 6, broker -> client)
+  assert_eq(s.phase_a.dropped, 1)
+  assert_eq(s.phase_a_acks, 0)
+  // phase B: resumed session replays PUBREL, and the peer completes it
+  assert_eq(connects_of(s.world, 0), 2)
+  assert_eq(s.world.replays, 0) // no PUBLISH re-sent
+  assert_eq(s.world.replays_pubrel, 1) // exactly one PUBREL re-sent
+  assert_eq(s.world.dups, 0) // PUBREL has no DUP flag to set
+  // and the client is settled again
+  assert_eq(acks_of(s.world, 0), 1)
+  assert_eq(inflight(s.world, 0), 0)
+  assert_eq(inflight_matches(s.world, 0), true)
+  assert_eq(no_bad_events(s.world), true)
+}
+
+///|
+test "qos2 recovery holds across seeds 1..6" {
+  for seed = 1; seed <= 6; seed = seed + 1 {
+    let s = run_recovery_ex(seed, 40, faults1(@sim.loss(1, 0, 6)), 2)
+    assert_eq(s.world.replays, 0)
+    assert_eq(s.world.replays_pubrel, 1)
+    assert_eq(inflight(s.world, 0), 0)
+    assert_eq(inflight_matches(s.world, 0), true)
+    assert_eq(no_bad_events(s.world), true)
+  }
+}

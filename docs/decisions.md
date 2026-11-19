@@ -183,3 +183,22 @@ README 的边界表，评审可以看到我们主动否掉了自己的扩张冲�
 （moon-mqtt `core/` 四后端可测、MoonAMQP1 明确 sans-I/O 无内置 broker），
 正是为了绕开上面这些运行时约束。若哪天 `now()` 可注入，重新评估的改动点
 是运行时本身，不是本项目内核。
+
+## D14 - QoS2 恢复是另一条分支，必须单独断言（不能靠 QoS1 的测试覆盖）
+
+D12 验证的是 QoS1：WaitPubAck 状态重发带 DUP 的 PUBLISH。QoS2 卡在 WaitPubcomp
+时，`replay_bytes()` 产出的却是 **PUBREL**——完全不同的报文类型、且**没有 DUP 位**。
+同一个"恢复"动词下藏着两个互斥的实现分支，用 QoS1 的测试覆盖不到。
+
+因此加 `run_recovery_ex(.., qos)` 与独立计数器 `replays_pubrel`，断言写成
+"镜像"形式：
+
+- QoS1 恢复：`replays=1, dups=1, replays_pubrel=0`
+- QoS2 恢复：`replays=0, dups=0, replays_pubrel=1`
+
+用两个计数器而不是一个"replays"总数，是为了让这两条分支**不能互相冒充**：
+如果哪天实现把 PUBREL 也当成 PUBLISH 重发，`replays` 会变 1、`replays_pubrel` 归零，
+测试立刻红。实测（seeds 1..6）全部符合预期。
+
+顺带确认了一个容易想当然的细节：`dups=0` 在 QoS2 恢复里是**正确**的，
+不是漏设——MQTT 3.1.1 的 DUP 标志只属于 PUBLISH。

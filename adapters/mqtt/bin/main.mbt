@@ -80,6 +80,23 @@ fn demos() -> Unit raise @sim.SimError {
     " reconciled=\{@adapter.inflight_matches(rec.world, 0)}",
   )
 
+  let r2 = @adapter.run_recovery_ex(7, 40, [@sim.loss(1, 0, 6)], 2)
+  println("== recovery QoS2: PUBCOMP lost -> PUBREL replayed (not PUBLISH)")
+  println("   phase A:")
+  for line in r2.phase_a.trace {
+    println("     " + line)
+  }
+  println("   phase B:")
+  for line in r2.result.trace {
+    println("     " + line)
+  }
+  println(
+    "   connects=\{@adapter.connects_of(r2.world, 0)} replays=\{r2.world.replays}" +
+    " replays_pubrel=\{r2.world.replays_pubrel} dups=\{r2.world.dups}" +
+    " inflight=\{@adapter.inflight(r2.world, 0)}" +
+    " reconciled=\{@adapter.inflight_matches(r2.world, 0)}",
+  )
+
   let mut ok_seeds = 0
   for seed = 1; seed <= 6; seed = seed + 1 {
     let s = @adapter.run_multi(

@@ -85,6 +85,9 @@ let again = @sim.replay_verify(text, reply)
 - [x] W4：**恢复路径验证**——丢 PUBACK → 重连（`session_present=1`）→ `replay_bytes()`
       重放 DUP=1 → 恢复归零，seeds 1..6 全绿；含"不注入故障则无重放"的控制组。
       把"文档说能恢复"变成"注入故障后确实恢复了"（D12）
+- [x] W5：**QoS2 是另一条恢复分支**——卡在 WaitPubcomp 时重放的是 PUBREL 而非
+      PUBLISH（`replays=0 / replays_pubrel=1 / dups=0`，因 DUP 位只属于 PUBLISH）。
+      用两个独立计数器让两条分支不能互相冒充，seeds 1..6 全绿（D14）
 - [x] v0.3 spike：**运行时级确定性调度判定不可行**，附行号证据
       （`now()` 是固定 C FFI、`Scheduler` 私有、外部事件循环仅 native 且 JS 空实现）。
       范围维持 sans-I/O；同时明确"事件注入"最多半确定性，不冒充可重放
