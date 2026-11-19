@@ -117,6 +117,12 @@ moon run cmd/perf --target native --release
 **1000 种子 × 20 步的扫描约 9–10 ms** —— 放在 CI 里跑全量种子扫描是可行的，
 不必为性能做取舍。方法学（以及测量时踩的两个坑）见 docs/decisions.md D15。
 
+## 证据索引
+
+[docs/evidence.md](docs/evidence.md) 把每一条对外主张映射到**一条复跑命令**和
+仓库里的文件——不想相信文档的人可以直接跑。它自己也有过期风险，所以接入演练与
+验收自检都挂在 CI 上：主张失效时构建先红。
+
 ## 给别人的库用 / 独立验证
 
 - [docs/adopting.md](docs/adopting.md) —— 30 行接上 chaossim：前提自查、三步胶水、
