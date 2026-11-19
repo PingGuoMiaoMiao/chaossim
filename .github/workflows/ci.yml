@@ -56,3 +56,8 @@ jobs:
       # stale guide fails CI instead of quietly misleading readers.
       - name: The adoption guide still works (adopting-drill)
         run: moon test examples/adopting-drill/drill/src --target native
+
+      # Self-check against the published acceptance criteria. A WARN here is a
+      # human should look; a FAIL means do not submit.
+      - name: Acceptance self-check
+        run: python tools/acceptance.py --since 2026-11-01 --skip-build
