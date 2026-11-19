@@ -358,3 +358,20 @@ docmunch 的 `tools/`、以及 `moonbit-hackathon-acceptance` 技能的
 
 教训：**检查器与被检对象描述同一件事时，两者必须用同一条命令**。脚本此前跑的是
 另一个命令形态，于是"验收通过"和"文档正确"可以同时为真却互相矛盾。
+
+## D23 - 单入口自检：一条命令答"这份提交有没有问题"
+
+此前评委要看三个脚本（acceptance / consistency / consumer_check），README 也得
+写三行。现在 `python tools/selfcheck.py` 一次跑完并打印统一表格：验收六条 +
+文档一致性六项（可选再加外部消费验证），3.8 秒返回，**有 FAIL 就 exit 1**。
+
+实现上刻意用子进程 + `--json` 合并，而不是把两个脚本 import 进来：
+- 每个脚本仍能单独跑（CI 里排错时只想跑一个）；
+- 一个脚本崩溃不会静默污染另一个的结果——`error` 会单独成行显示。
+
+失败路径**验证过**：往 README 里加一行"本项目有 7 个测试"，selfcheck 立刻 <!-- consistency:ignore -->
+`exit=1` 并打印 `FAIL Test counts README.md:193: claims 7/7, suite has 39`。
+（注意 `--skip-build` 时这一项会 SKIP，因为没跑 `moon test` 就没有可比的真实值；
+SKIP 与 PASS 在表格里分开计数，不混为一谈。）
+
+CI 里两个独立步骤合并成一个 Self-check 步骤——少一个会漂的脚手架。

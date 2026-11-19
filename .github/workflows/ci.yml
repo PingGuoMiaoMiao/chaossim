@@ -59,8 +59,10 @@ jobs:
 
       # Self-check against the published acceptance criteria. A WARN here is a
       # human should look; a FAIL means do not submit.
-      - name: Acceptance self-check
-        run: python tools/acceptance.py --since 2026-11-01 --skip-build
+      # One command for the whole state of the submission: the six published
+      # acceptance rules plus the document-vs-code consistency checks.
+      - name: Self-check
+        run: python tools/selfcheck.py
 
   # Documents drift away from the code faster than anyone notices. This checks
   # test-count claims against the real suite, ADR numbering for gaps/duplicates,
@@ -73,5 +75,5 @@ jobs:
         uses: moonbitlang/setup-moonbit@main
         with:
           version: "0.1.20261104"
-      - name: Consistency guard
-        run: python tools/consistency.py
+      - name: Self-check
+        run: python tools/selfcheck.py

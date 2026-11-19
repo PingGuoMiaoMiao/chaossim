@@ -76,9 +76,8 @@ moon run adapters/amqp1/bin --target native  # ★ 真实靶子 2：AMQP 1.0（�
 moon run cmd/perf --target native --release  # 吞吐与 CI 预算
 moon run cmd/main --target native            # 最小内核演示：同种子重放 + crash 注入
 
-# 自检脚本（可选，需要 Python）
-python tools/acceptance.py --since 2026-11-01   # 验收六条
-python tools/consistency.py --skip-build        # 文档口径一致性
+# 自检：一条命令看全部状态（验收六条 + 文档与代码一致性）
+python tools/selfcheck.py
 ```
 
 注意 `--target native` 别省：不带 target 时 `moon test` 会**按后端分别报告**
