@@ -1,0 +1,12 @@
+docs: adoption guide + publishable independent-verification report
+
+docs/adopting.md distills the three-step recipe (World with frame slots, a
+two-node handler whose peer stays stateless, delivery-independent invariants)
+and lists the four traps we actually hit, including the one from D12: a global
+cross-client counter makes results seed-dependent.
+
+docs/reports/independent-verification.md is written so it can be handed to the
+two upstream maintainers as-is: every scenario, the observed counters, the
+recovery trace with dups=1 read back through decode_packet, and an explicit
+"not covered" section (transport/browser layers for MQTT; the synchronously
+driven handshake for AMQP). No quality claims, only reproducible observations.

@@ -95,6 +95,14 @@ let again = @sim.replay_verify(text, reply)
       `moon login`（当前 `moon whoami` 报 username unavailable）；
       申报材料见 docs/registration-dec.md
 
+## 给别人的库用 / 独立验证
+
+- [docs/adopting.md](docs/adopting.md) —— 30 行接上 chaossim：前提自查、三步胶水、
+  不变量怎么挑、四个常见坑（含我们自己踩过的：全局计数器会随种子漂移）。
+- [docs/reports/independent-verification.md](docs/reports/independent-verification.md)
+  —— 对 `Duckweed/moon-mqtt` 与 `binhongcha/moonamqp1` 的独立故障注入报告，
+  含逐条场景、观察值与未覆盖范围，可直接复跑。
+
 ## 开发过程与 AI 可解释性
 
 - 仓库公开，从第一天起连续提交；里程碑用 tag。
