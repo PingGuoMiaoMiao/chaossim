@@ -1,0 +1,49 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MoonBit
+        uses: moonbitlang/setup-moonbit@main
+        with:
+          version: "0.1.20261104"
+
+      - name: Check (deny warnings)
+        run: moon check --target native --deny-warn
+
+      - name: Test
+        run: moon test --target native
+
+      - name: Format check
+        run: |
+          moon fmt
+          git diff --exit-code || (echo "::error::moon fmt produced changes; run 'moon fmt' locally" && exit 1)
+
+  # The workspace members (adapters/, spikes/) are NOT part of the published
+  # package - they depend on third-party libraries the library itself does
+  # not. They are still built here on purpose: the adapter is the proof that
+  # the library drives real protocol code, and a regression there is a real
+  # regression. .moonignore keeps them out of `moon package`.
+  workspace:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MoonBit
+        uses: moonbitlang/setup-moonbit@main
+        with:
+          version: "0.1.20261104"
+
+      - name: Test workspace (library + mqtt adapter)
+        run: moon test --target native
+
+      - name: Run the fault-injection transcript
+        run: moon run adapters/mqtt/bin --target native
