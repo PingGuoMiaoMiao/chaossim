@@ -33,7 +33,9 @@
 - **QoS2 恢复分支单独验证**：卡在 WaitPubcomp 时重放 PUBREL 而非 PUBLISH
   （两个独立计数器防互相冒充）
 - **接入指南是可执行的**：`examples/adopting-drill/` 为完全按指南写出的第三方小库，
-  随 `moon test` 一起跑（指南失效即红）；workspace 39/39 测试，
+  随 `moon test` 一起跑（指南失效即红）
+- **性能可复跑**：约 460–500 ns/调度步，1000 种子 × 20 步扫描约 9–10 ms
+  （`moon run cmd/perf --release`）；workspace 39/39 测试，
   `moon check --deny-warn` 零警告，公开历史自 11-19
 - 多客户端重构中修复真 bug：broker 应答硬编码回 node0（单客户端永远测不出）
 - 诚实边界：至今未发现靶子的行为 bug；主张的是"故障下可复核的等价类 +

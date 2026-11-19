@@ -98,6 +98,25 @@ let again = @sim.replay_verify(text, reply)
       `moon login`（当前 `moon whoami` 报 username unavailable）；
       申报材料见 docs/registration-dec.md
 
+## 性能（可复跑）
+
+```sh
+moon run cmd/perf --target native --release
+```
+
+单机 release 实测（内核：种子调度 + 故障评估 + trace 构建，不含靶子库的编解码）：
+
+| 形状 | 每次运行 | 每调度步 |
+| --- | --- | --- |
+| 4 步 | 1.94 us | 485 ns |
+| 20 步 | 9.16 us | 458 ns |
+| 200 步 | 95.4 us | 477 ns |
+| 20 步 + 4 个故障 | 10.02 us | 501 ns |
+
+结论：**约 460–500 ns / 调度步**，叠加 4 个故障只多约 9%。所以
+**1000 种子 × 20 步的扫描约 9–10 ms** —— 放在 CI 里跑全量种子扫描是可行的，
+不必为性能做取舍。方法学（以及测量时踩的两个坑）见 docs/decisions.md D15。
+
 ## 给别人的库用 / 独立验证
 
 - [docs/adopting.md](docs/adopting.md) —— 30 行接上 chaossim：前提自查、三步胶水、

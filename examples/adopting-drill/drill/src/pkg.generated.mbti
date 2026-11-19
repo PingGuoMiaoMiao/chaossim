@@ -1,0 +1,46 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "drill/toy/src"
+
+import {
+  "PingGuoMiaoMiao/chaossim/sim",
+}
+
+// Values
+pub fn in_flight_matches(World) -> Bool
+
+pub fn make_handler(World) -> (Int32, @sim.Msg) -> Array[@sim.Msg]
+
+pub fn new_world() -> World
+
+pub fn no_bad_events(World) -> Bool
+
+pub fn run(Int32, Int32, Array[@sim.Fault]) -> Scenario raise @sim.SimError
+
+// Errors
+
+// Types and methods
+pub struct Scenario {
+  result : @sim.RunResult
+  world : World
+}
+
+pub(all) struct Toy {
+  mut in_flight : Array[Int32]
+  mut sent : Int32
+  mut acked : Int32
+}
+pub fn Toy::new() -> Self
+pub fn Toy::on_ack(Self, Int32) -> Bool
+pub fn Toy::request(Self, Int32) -> Int32
+
+pub(all) struct World {
+  core : Toy
+  mut frames : Array[Int32]
+  mut issued : Int32
+  mut acks : Int32
+  mut bad_events : Int32
+}
+
+// Type aliases
+
+// Traits

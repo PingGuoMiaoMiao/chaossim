@@ -1,5 +1,3 @@
-// sim package: deterministic runner + faults + replay + virtual clock.
-
 import {
   "moonbitlang/core/json",
 }

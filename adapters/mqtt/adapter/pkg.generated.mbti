@@ -33,6 +33,8 @@ pub fn run_multi(Int32, Int32, Array[@sim.Fault], Int32, Int32, Int32) -> Scenar
 
 pub fn run_recovery(Int32, Int32, Array[@sim.Fault]) -> Scenario raise @sim.SimError
 
+pub fn run_recovery_ex(Int32, Int32, Array[@sim.Fault], Int32) -> Scenario raise @sim.SimError
+
 pub fn run_scenario(Int32, Int32, Array[@sim.Fault]) -> Scenario raise @sim.SimError
 
 pub fn run_scenario_ex(Int32, Int32, Array[@sim.Fault], Int32, Int32) -> Scenario raise @sim.SimError
@@ -66,6 +68,7 @@ pub(all) struct World {
   connects : Array[Int32]
   mut replays : Int32
   mut dups : Int32
+  mut replays_pubrel : Int32
 }
 
 // Type aliases
