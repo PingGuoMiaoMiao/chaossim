@@ -81,6 +81,10 @@ python tools/acceptance.py --since 2026-11-01   # 验收六条
 python tools/consistency.py --skip-build        # 文档口径一致性
 ```
 
+注意 `--target native` 别省：不带 target 时 `moon test` 会**按后端分别报告**
+（本机会看到 `[wasm]` 与 `[native]` 两行合计），容易误读成"总共有 26 个测试"。 <!-- consistency:ignore -->
+本项目声明的主目标是 native，验收脚本也按 `moon.mod` 的 `preferred_target` 跑。
+
 先看第二条：它打印的 trace 就是本项目存在的理由——真实协议代码在注入故障后
 `reconciled=true`，以及丢 PUBACK 后按文档恢复、重放帧带 DUP。
 
