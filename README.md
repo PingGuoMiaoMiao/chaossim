@@ -154,6 +154,10 @@ moon run cmd/perf --target native --release
 **1000 种子 × 20 步的扫描约 9–10 ms** —— 放在 CI 里跑全量种子扫描是可行的，
 不必为性能做取舍。方法学（以及测量时踩的两个坑）见 docs/decisions.md D15。
 
+## 变更记录
+
+[CHANGELOG.md](CHANGELOG.md) 按**能力**组织（不是 git log 的搬运），每条带可复跑命令与 commit；被否决的方向与已知限制也记在里面。
+
 ## 证据索引
 
 [docs/evidence.md](docs/evidence.md) 把每一条对外主张映射到**一条复跑命令**和

@@ -293,3 +293,20 @@ docmunch 的 `tools/`、以及 `moonbit-hackathon-acceptance` 技能的
 `moon run adapters/mqtt/bin` 的输出里。**并且验证过它会失败**——故意把
 `matches=true` 改成 `matches=TRUE` 后检查器立刻报 FAIL，改回来才 PASS。
 一个不会失败的检查器等于没有。
+
+## D19 - CHANGELOG 按能力组织并引用 commit；引用的 hash 必须存在
+
+`git log` 不是变更记录：27 个 commit 里有 chore、有修自己笔误、有回滚，读者无法
+从中判断"这个月到底做成了什么"。因此 `CHANGELOG.md` 按**能力**分节（内核 / 真实
+靶子 / 工程与验证 / 被否决的方向 / 已知限制），每条带可复跑命令与 commit 范围。
+
+三个刻意的选择：
+1. **被否决的方向也写进去**（moonraft 作靶、moonmq 作靶、运行时级调度、
+   `moon bench`）。这既是给评审看的取舍证据，也是防止后人重复试错。
+2. **已知限制单独一节**，包含"未发现靶子的 bug"和"0.3.0 尚未发布"。
+3. **引用的 commit hash 进一致性检查**：文档里出现 `\`abc1234\`` 就必须能在
+   仓库里找到该 commit。一个引用不存在 hash 的变更记录比不写更糟——它看起来
+   可核实，实际不可。
+
+实测：本仓库 20 个引用 hash 全部存在且主题匹配（写完后逐个 `git log -1` 核对过，
+然后才把检查加进去）。
