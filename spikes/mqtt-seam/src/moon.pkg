@@ -1,0 +1,9 @@
+import {
+  "Duckweed/moon-mqtt/core",
+  "Duckweed/moon-mqtt/protocol",
+  "PingGuoMiaoMiao/chaossim/sim",
+}
+
+supported_targets = "wasm+wasm-gc+js+native"
+
+pkgtype(kind: "executable")

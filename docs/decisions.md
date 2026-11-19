@@ -36,3 +36,20 @@ fast，并有 `expect_invalid` 测试族兜底。放弃：`#derive(ToJson)` on e
 
 时钟 tick = 步；held 消息按步释放；空步也计数。一切从 seed 出发可重放，
 跨后端逐字节一致。真实时长语义留给 v0.3 spike（async 运行时截停）再谈。
+
+## D6 — 靶子选择：否决 moonraft，选定 moon-mqtt
+
+原计划 W2 用 `moonbitstack/moonraft` 做示范靶。核实 README 后发现它自带
+确定性模拟簇（丢包/延迟/乱序/分区/崩溃 + 安全不变量逐步复查 + etcd 语料
+逐字节回放）——在它身上"注入故障"是在复述它自己的测试。选定标准改为
+"**没有自带调度级故障注入 harness 的真实协议项目**"：`Duckweed/moon-mqtt`
+的三条已修 bug 全是交错/帧边界类，且其测试为脚本化正序路径 + 人工验收，
+无乱序/延迟/重放注入面。详见 docs/w2-targets.md。
+
+## D7 — 先 spike 后适配器；wire codec 不手写偏移
+
+spike（spikes/mqtt-seam）只回答一个问题：外部 harness 能否用
+`start/feed/publish` 纯字节接缝驱动 ClientCore。8/8 通过。过程中第一次
+FAIL 是我手写 MQTT 偏移出错（PUBLISH 的 packet-id 在 topic 之后，不在
+固定头后），库的行为是对的——这直接定下适配器规则：**报文解析必须复用
+protocol 包自身编解码，chaossim 侧只调度"已解码的事件"，不再碰裸偏移**。
