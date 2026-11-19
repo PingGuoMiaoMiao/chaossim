@@ -74,3 +74,20 @@ issue 或把等价类报告做成 PR。
 - 本次重构暴露并修掉一个**只在双客户端下才现形**的真 bug：broker 应答原先
   硬编码回 node 0，应回 `msg.from`。单客户端测试永远抓不到它——这是多客户端
   投资的直接回报，已记入 decisions D9。
+
+## W3 首轮记录（第二靶子 MoonAMQP1，2026-11-19）
+
+| 场景 | 故障 | 结果（实测） |
+| --- | --- | --- |
+| 干净线路 | 无 | sends=1 received=1 settled=1 pending=(0,0)，credit 对账成立 |
+| 传输丢失 | `loss(0,1,from 1)` | received=0 settled=0 pending=(1,0)，**credit 对账仍成立** |
+| 结算丢失 | `loss(1,0,from 2)` | received=1 settled=0 pending=(1,0)——服务端收了并确认，但 app 没收到确认，保持未结算（这正是重试决策需要看到的状态） |
+| 服务端慢 | `delay_window(1,2,3,until 6)` | 收敛回 (0,0)，credit 对账成立 |
+
+跨协议结论：同一套 sim 内核（种子调度 + loss/delay/partition + 有界运行）
+无需改动即驱动了第二种协议（MQTT 3.1.1 客户端 与 AMQP 1.0 端点对），
+"协议无关"从 README 的一句话变成了可复跑的 31/31 测试。
+
+方法学收获：AMQP 的 `credit` 给了 **投递无关不变量** 的范例——断言"记账"而不是
+"送达"，在故障场景下才有意义。这条可以回灌到 MQTT 适配器的表述里（其
+`inflight == issued - acks` 就是同一类）。

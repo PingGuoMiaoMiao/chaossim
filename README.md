@@ -76,8 +76,11 @@ let again = @sim.replay_verify(text, reply)
 - [x] W2c：多客户端模型（客户端占偶数节点、broker=1）+ partition；
       链路切断类 seeds 1..6 全对账，途中暴露并修掉"应答硬编码回 node0"
       这个只有双客户端才会现形的真 bug（D9）
-- [ ] v0.3：第二靶子（候选 `Zcxssxx/moonmq` AMQP broker，无自带故障台）；
-      `moonbitlang/async` 续作级调度 spike（风险前置，不可行则收窄并写明）
+- [x] W3：第二靶子 **MoonAMQP1**（AMQP 1.0，sans-I/O、无内置 broker、11-16 活跃）。
+      同一套内核零改动驱动两种协议：MQTT 3.1.1 客户端 + AMQP 1.0 端点对，
+      31/31 测试。AMQP 给出"投递无关不变量"的范例：`credit_before - sends ==
+      link_credit(now)` 在丢传输/丢结算/慢服务下全部成立（D11）
+- [ ] v0.3：`moonbitlang/async` 续作级调度 spike（风险前置，不可行则收窄并写明）
 - [ ] v0.4：不变量钩子 + 对接 `moon_historycheck`/`lincheck` 的线性一致性示例（复用声明写明出处与许可证）
 - [ ] v1.0（12 月验收包）：发布 mooncakes 0.3.0 —— 包已打好且干净
       （`moon package` 通过、zip 内 0 条工作区成员泄漏），只差维护者执行

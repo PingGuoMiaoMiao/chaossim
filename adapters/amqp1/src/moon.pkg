@@ -1,0 +1,6 @@
+import {
+  "binhongcha/moonamqp1",
+  "PingGuoMiaoMiao/chaossim/sim",
+}
+
+supported_targets = "wasm+wasm-gc+js+native"

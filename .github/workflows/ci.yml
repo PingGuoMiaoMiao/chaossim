@@ -45,5 +45,8 @@ jobs:
       - name: Test workspace (library + mqtt adapter)
         run: moon test --target native
 
-      - name: Run the fault-injection transcript
+      - name: Run the MQTT fault-injection transcript
         run: moon run adapters/mqtt/bin --target native
+
+      - name: Run the AMQP 1.0 fault-injection transcript
+        run: moon run adapters/amqp1/bin --target native

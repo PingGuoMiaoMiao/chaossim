@@ -108,3 +108,30 @@ exclude 字段是发布侧生成的元数据，不是同名配置项的来源。
 CI 里仍然构建工作区成员（adapters/spikes）。理由：适配器是"库能驱动真实
 协议代码"的证明，它回归就是真回归；但它不该出现在别人下载的包里。这两件事
 互不矛盾，靠 .moonignore 分开。
+
+## D11 - 第二靶子选 MoonAMQP1（而非 MoonMQ）：活跃度 + sans-I/O + 无自带 broker
+
+原候选 `Zcxssxx/moonmq`（AMQP 0-9-1 核 + 内嵌内存 broker）被否，三条理由：
+1. **停更**：GitHub 最后推送 2026-09-27，是 9 月赛项目，已近两个月无动静；
+   给它报 bug 没人接，"采用"故事也立不住。
+2. **自带 broker**：它把 broker 也实现了，等于半个仿真环境；在它身上注入故障
+   容易变成"测它的 broker 对不对"，而不是"测协议实现在故障下的记账"。
+3. 依赖 async 0.20.2 且 preferred_target=wasm，驱动面偏重。
+
+改选 `binhongcha/moonamqp1@0.2.1`（AMQP 1.0）：
+- 11-16 仍活跃；
+- **sans-I/O 是设计目标**（bytes/commands -> bytes/events，README 原话"无内置
+  broker、TCP 客户端、SASL、TLS"），接缝天然就是 chaossim 要的形状；
+- 带**可断言的数值状态**：link credit、session window position、pending、
+  settlement。这让"与投递无关的不变量"成为可能，而不是只能断言"消息到了没"。
+
+关键不变量（本轮实测全部成立）：
+
+    credit_before - sends == link_credit(now)
+
+理由：AMQP 在 `send()` 时就扣 credit，与帧是否抵达无关。所以丢传输、丢结算、
+慢服务三种故障下，credit 算术都必须成立——这条断言不依赖"正确的 broker 会回
+什么"，正好避开"我的仿真 broker 对不对"的陷阱。
+
+边界声明：握手（start/begin/attach/grant）同步完成、不进调度器。握手是固定
+交换，放进调度器只增加抖动不增加信息；被调度的是消息周期，故障在那里才有意义。
