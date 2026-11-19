@@ -410,3 +410,25 @@ CI 里不启用这一项（CI 不该依赖 registry 可达）；它属于"发布
 
 失败路径验证过：把 adoption.md 的下载数改成 99，立刻
 `FAIL Registry: adoption.md claims 99 downloads, registry says 44`，退出码 1。
+
+## D26 - 未发布阶段的"采用"证据：仓库之外的独立模块跑通故障场景
+
+发布前拿不到 registry 消费证据，但"能编译"也不足以说明可被采用。补了一条更硬的：
+`tools/consumer_check.py` 在临时目录新建**完全独立**的模块（自己的 moon.mod、
+不在本仓库内），按名字依赖 chaossim，跑一个真实 crash 场景，再让
+`replay_verify` 把产出的工件重新执行一遍。实测：
+
+```
+steps=2 delivered=1 dropped=1 / replay_bytes=285 / verified_steps=2
+```
+
+第三步是关键——工件不是日志，是**可执行的主张**；外部模块能自证这一点，才算
+"这个库对别人有用"。
+
+同 docmunch 的口径（对方项目的 D60）：`docs/adoption.md` 把原始数据与证据分层，
+并明确列出"什么才算真采用"（被依赖 / 被写出真实场景 / 有 issue 或 PR / 独立实现
+满足契约），当前**四项全为 0**，因此不主张"已被采用"。
+
+顺手记一个操作教训：用 shell heredoc 往 `.mbt` 里写 `\{expr}` 会被转义吃掉
+一层，导致插值变成字面量。写含插值的 MoonBit 源码要用文件写入工具，不要走 shell
+字符串。
