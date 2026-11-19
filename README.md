@@ -1,0 +1,83 @@
+# chaossim (MoonBit)
+
+Deterministic fault-injection simulation **for your real MoonBit state
+machine** — no model rewrite. You keep your handler/protocol code as it is;
+chaossim controls *which message is delivered next* (seeded RNG), *what time
+it is* (virtual clock), and *which node is down* (crash plan). Every run is
+replayable byte-for-byte from its seed and produces a trace you can diff,
+shrink and attach to an issue.
+
+这是为 2026 MoonBit 年度黑客松（Q2 赛季，12 月赛申报）新建的项目。立项调研与
+占位核对见 [docs/pre-research.md](docs/pre-research.md)。
+
+## 它是什么 / 不是什么
+
+| | chaossim | 说明 |
+| --- | --- | --- |
+| 被测对象 | **生产代码本体**（你的 `(node, msg) -> outgoing` 处理函数就是真实现） | 不需要把协议重写成另一套“仿真模型” |
+| 调度 | 种子化确定性投递顺序 + 虚拟时钟 + 有界步数 | 同一 `(handler, initial, seed, plan)` ⇒ 同一 trace |
+| 故障 | v0 实现 crash/静默丢弃；drop、partition、时钟漂移在路线图上 | 故障类型封顶 4 种，超出宁缺毋滥 |
+| 不变量 | 交付/丢弃计数、trace 相等、有界收敛 | 线性一致性**不自研**，计划对接 `moon_historycheck` / `lincheck` |
+
+**明确不做**：真多进程、真网络包注入、任意 `moonbitlang/async` 程序的运行时
+级截停（见 docs/pre-research.md 的风险分析；若 W1 spike 证明可控，会作为
+v0.3+ 的显式扩展点重新立项说明）。
+
+## 外部基线（评审准则第 03 条要求，先摆在这里）
+
+| 现有方案 | 它做到哪 | chaossim 的差异 |
+| --- | --- | --- |
+| [`oyjh0381/moonlab`](https://github.com/oyjh0381/MoonLab)（Q1 项目，11-12 仍在维护） | 把协议**重写成** typed 纯迁移模型（boot/step/observe），仿真模型本身；含 replay/trace/shrink CLI | 被测对象是**真实代码**而非模型；发现的是实现的 bug，不是模型的 bug。两者互补：moonlab 验证设计，chaossim 验证代码 |
+| [`NekoYume517/lincheck`](https://github.com/NekoYume517/lincheck)、`123123213weqw/moon_historycheck` | 并发历史的线性一致性判定（oracle） | 不重造 oracle，作为检查器接入；chaossim 负责产生可控执行 |
+| `zhangbowen2006/moonbit-target-parity` | 跨后端行为一致性 | 维度不同（后端 vs 调度交错），可同场使用 |
+| `wcx789ll/moonsim` / `mizchi/machinations` | 离散事件仿真（游戏经济/DES） | 目标是协议正确性测试，不是仿真业务 |
+| Jepsen/faultcanvas | 真集群/真 HTTP 故障代理 | 进程内、零部署、CI 秒级反馈 |
+
+一句话基线主张（README 第一屏承诺，验收时逐条对数）：**生态里有“仿真你的模型”
+（moonlab）和“检查你的历史”（lincheck/historycheck），但没有“在你自己的代码上
+注入调度与故障”的那一层。chaossim 补这层，并给出可复跑证据。**
+
+## Quick start
+
+```sh
+moon build --target native
+moon test                          # determinism / echo / crash-plan 用例
+moon run cmd/main --target native  # 90 秒演示：带种子重放 + crash 注入
+```
+
+## Library sketch（v0 真实 API，见 sim/*.mbt）
+
+```moonbit
+let handler : @sim.Handler = (node, msg) =>
+  if msg.payload == 1 { [{ from: node, to: msg.from, payload: 2 }] } else { [] }
+
+let result = @sim.run_bounded(
+  handler,
+  [{ from: 0, to: 1, payload: 1 }], // initial messages
+  42,                               // seed
+  100,                              // max steps
+  Some({ node: 1, from_step: 1 }),  // crash plan: node 1 从第 1 步起静默
+)
+```
+
+## Roadmap（与验收对齐，只承诺能测的东西）
+
+- [ ] v0.1（本次提交）：种子化投递调度器 + crash 计划 + trace/计数；确定性测试
+- [ ] v0.2：`SimError` 化错误处理；drop / partition 故障；trace 落盘与逐字节重放
+- [ ] v0.3：**spike（风险前置）**：`moonbitlang/async` 续作级调度（ timers/channel 虚拟时间）；
+      可行则做“真实 async handler”适配层，不可行则收窄为纯迁移函数并写进 README
+- [ ] v0.4：不变量钩子 + 对接 `moon_historycheck` 的线性一致性示例（复用声明写明出处与许可证）
+- [ ] v1.0（12 月验收包）：对 ≥2 个生态项目（候选：`moonbitstack/moonraft`、
+      `Duckweed/moon-mqtt`）出适配 + 真实发现记录（issue 链接）
+
+## 开发过程与 AI 可解释性
+
+- 仓库公开，从第一天起连续提交；里程碑用 tag。
+- `docs/pre-research.md`：选题占位核对原始证据（日期、包名、版本、仓库活跃度）。
+- `docs/decisions.md`（随进度追加）：关键取舍，含“为什么不做运行时截停”的失败预案。
+- AI 使用：代码/文档由 AI 辅助起草，人工逐段核对并跑测试；所有数字来自本仓库
+  测试实测，README 不出现无法复跑的指标。
+
+## License
+
+MIT.

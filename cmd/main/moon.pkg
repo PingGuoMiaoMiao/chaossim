@@ -1,0 +1,5 @@
+import {
+  "PingGuoMiaoMiao/chaossim/sim",
+}
+
+pkgtype(kind: "executable")
