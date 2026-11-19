@@ -88,3 +88,23 @@ node 0（单客户端时永远正确）。改成回给 `msg.from`。这条 bug �
 拿到 CONNACK 而分叉，**断言不再 seed 无关**。因此测试只钉两类由构造保证
 seed 无关的场景：① 从第 1 步切断（对方根本建不起会话）② 窗口内延迟恢复。
 "第 5 步切断"这种中途隔离放进 bin transcript 展示，不写进硬断言——同 D8。
+
+## D10 - 工作区成员不进发布包：用 .moonignore，不是 moon.mod 的 exclude
+
+发现：`moon package` 把 `adapters/mqtt/` 与 `spikes/mqtt-seam/` 一起打进了
+发布 zip。这两个是**独立模块**（各有 moon.mod）且依赖 `Duckweed/moon-mqtt`——
+不是主库的依赖。后果是消费者下载后拿到一堆引用不到包的源码，外加一个
+moon.work 邀请构建器把它们当成员解析。
+
+先试 `moon.mod` 的 `exclude = [...]`：本工具链（0.1.20261104）直接拒绝，
+报 "Unexpected key 'exclude' found in moon.mod"。registry 里 moon-mqtt 的
+exclude 字段是发布侧生成的元数据，不是同名配置项的来源。改用 `.moonignore`
+（`adapters/`、`spikes/`、`moon.work`），打包后逐条目验证：泄漏 0 条，
+只留 sim/ + cmd/ + docs/ + 元数据。
+
+权衡：测试文件（world_wbtest.mbt）保留在包里——消费者可以自己 `moon test`
+验证行为，这是"可验证"卖点的一部分，体积代价可忽略。
+
+CI 里仍然构建工作区成员（adapters/spikes）。理由：适配器是"库能驱动真实
+协议代码"的证明，它回归就是真回归；但它不该出现在别人下载的包里。这两件事
+互不矛盾，靠 .moonignore 分开。

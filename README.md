@@ -79,7 +79,9 @@ let again = @sim.replay_verify(text, reply)
 - [ ] v0.3：第二靶子（候选 `Zcxssxx/moonmq` AMQP broker，无自带故障台）；
       `moonbitlang/async` 续作级调度 spike（风险前置，不可行则收窄并写明）
 - [ ] v0.4：不变量钩子 + 对接 `moon_historycheck`/`lincheck` 的线性一致性示例（复用声明写明出处与许可证）
-- [ ] v1.0（12 月验收包）：发布 mooncakes 0.3.0（带真实靶子用例后首发）；
+- [ ] v1.0（12 月验收包）：发布 mooncakes 0.3.0 —— 包已打好且干净
+      （`moon package` 通过、zip 内 0 条工作区成员泄漏），只差维护者执行
+      `moon login`（当前 `moon whoami` 报 username unavailable）；
       申报材料见 docs/registration-dec.md
 
 ## 开发过程与 AI 可解释性
