@@ -28,3 +28,20 @@
 loss（丢 PUBACK）/ delay（晚到 PUBCOMP）/ 重放（reconnect_bytes 后再投）。
 不变量 = inflight 计数有界、自动 ACK 字节合法、`FramerError` 后不再发帧。
 任何"库行为与 README 声称不符"的发现，走 issue 披露流程（先复现 trace 再提）。
+
+## 首次运行记录（适配器，seed 7 / max_steps 20）
+
+| 场景 | 故障 | 结果 |
+| --- | --- | --- |
+| clean | 无 | CONNECT→CONNACK→PUBLISH→PUBACK，inflight 归零，对账成立 |
+| ack loss | `loss(1,0,from 3)` | PUBACK 被丢：acks_delivered=0，inflight=1，`inflight == issued - delivered` 仍成立 |
+| crash | `crash(1,from 3)` | 与 loss 同终局（从客户端不可区分）——正是期望的等价类 |
+| ack delayed (window) | `delay_window(0,3,2,until=5)` | 延迟一次、step6 送达、inflight 归零 |
+| ack delayed forever | `delay(0,3,2)` | **饿死**：deferred=9、ACK 永不达、inflight 恒 1，但记账不变量成立 |
+
+诚实结论：首轮未发现 moon-mqtt 的行为 bug（其 QoS1 路径在注入下记账自洽）。
+价值主张不依赖"发现 bug"而依赖"**可复核的等价类与不变量**"：饿死与丢失
+在客户端侧不可区分、对账式不变量在全部故障下成立——这些是任何人可以
+`moon run adapters/mqtt/bin` 复跑的。下一步（W2b）：3 节点 + partition
+场景与 QoS2 四段握手，把注入面推到乱序/重放；届时才谈给上游提 issue 或
+把等价类报告做成 PR。

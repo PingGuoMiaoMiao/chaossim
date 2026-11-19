@@ -13,6 +13,8 @@ pub fn crash(Int32, Int32) -> Fault
 
 pub fn delay(Int32, Int32, Int32) -> Fault
 
+pub fn delay_window(Int32, Int32, Int32, Int32) -> Fault
+
 pub fn loss(Int32, Int32, Int32) -> Fault
 
 pub fn next_state(Int32) -> Int32

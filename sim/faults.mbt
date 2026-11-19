@@ -84,6 +84,9 @@ pub fn loss(from : Int32, to : Int32, from_step : Int32) -> Fault {
 ///|
 /// Messages to `node` are held `steps` scheduling steps before delivery.
 /// The scheduler keeps ticking while a hold is pending (decisions.md D3).
+/// `until < 0` (default) = slow forever; a non-negative window restores
+/// normal delivery past `until` (D8 — the forever case starves forever, and
+/// the mqtt demo keeps that transcript as evidence).
 pub fn delay(node : Int32, from_step : Int32, steps : Int32) -> Fault {
   {
     kind: "delay",
@@ -93,6 +96,28 @@ pub fn delay(node : Int32, from_step : Int32, steps : Int32) -> Fault {
     group_b: [],
     from_step,
     until: -1,
+  }
+}
+
+///|
+
+///|
+/// Like `delay` but the slowness lasts only through step `until`: outside
+/// the window, messages to `node` flow normally again (decisions.md D8).
+pub fn delay_window(
+  node : Int32,
+  from_step : Int32,
+  steps : Int32,
+  until : Int32,
+) -> Fault {
+  {
+    kind: "delay",
+    a: node,
+    b: steps,
+    group_a: [],
+    group_b: [],
+    from_step,
+    until,
   }
 }
 
@@ -169,7 +194,7 @@ fn bites(f : Fault, steps : Int32, msg : Msg) -> Bool {
   match f.kind {
     "crash" => f.a == msg.to
     "loss" => f.a == msg.from && f.b == msg.to
-    "delay" => f.a == msg.to
+    "delay" => f.a == msg.to && (f.until < 0 || steps <= f.until)
     "partition" => {
       let cross = (in_group(f.group_a, msg.from) && in_group(f.group_b, msg.to)) ||
         (in_group(f.group_b, msg.from) && in_group(f.group_a, msg.to))

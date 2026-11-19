@@ -1,4 +1,5 @@
 members = [
   ".",
   "spikes/mqtt-seam",
+  "adapters/mqtt",
 ]

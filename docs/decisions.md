@@ -53,3 +53,15 @@ spike（spikes/mqtt-seam）只回答一个问题：外部 harness 能否用
 FAIL 是我手写 MQTT 偏移出错（PUBLISH 的 packet-id 在 topic 之后，不在
 固定头后），库的行为是对的——这直接定下适配器规则：**报文解析必须复用
 protocol 包自身编解码，chaossim 侧只调度"已解码的事件"，不再碰裸偏移**。
+
+## D8 — delay 拆成 `delay`（永久慢）与 `delay_window`（窗口慢），不引入默认参数
+
+触发：适配器第一条 delay 场景的断言与实现语义相撞——`delay(node, from, hold)`
+按 D3 是"每次投递都延迟"，对 ACK 就是**永久饿死**；run 的 transcript 显示
+`deferred=9`、inflight 恒 1、而对账不变量 `inflight == issued - delivered`
+依然成立。这是好证据，不是 bug：它同时刻画了"慢节点饿死"和"记账在故障下
+仍自洽"。于是补窗口变体 `delay_window(..., until)`（窗口外恢复正常投递）。
+曾先试 `until : Int32 = -1` 默认参数——编译器要求 label 参数，而本地生态
+（moon-mqtt、依赖树全部包）没有一个默认参数，惯例是 option-struct 或双函数。
+跟随生态惯例，撤销默认参数。教训同 D7：断言来自第一次真实运行的输出，
+不来自想象中的语义。

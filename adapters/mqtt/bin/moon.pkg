@@ -1,0 +1,8 @@
+import {
+  "PingGuoMiaoMiao/chaossim/sim",
+  "PingGuoMiaoMiao/chaossim-mqtt/adapter",
+}
+
+supported_targets = "wasm+wasm-gc+js+native"
+
+pkgtype(kind: "executable")

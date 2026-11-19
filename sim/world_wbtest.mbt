@@ -98,6 +98,24 @@ test "delay re-holds under retry pressure: the slow-node livelock is visible" {
 }
 
 ///|
+test "delay window restores delivery after the window closes" {
+  let initial = [{ from: 0, to: 1, payload: 1, }]
+  // slow node 1 from step 3 for 2-step holds, only through step 5. Actual
+  // trace below (asserted from the first real run, not wishful): two
+  // bounded delays, then both directions flow - the ping-pong keeps
+  // producing until max_steps, which is fine: the point is the delay is
+  // BOUNDED where the forever variant starves forever.
+  let r = run_bounded(reply_handler, initial, 42, 10, [delay_window(1, 3, 2, 5)])
+  assert_eq(r.deferred, 2)
+  assert_eq(r.dropped, 0)
+  assert_eq(r.steps, 10)
+  assert_eq(r.trace, [
+    "send 1: 0->1 #1", "send 2: 1->0 #2", "delay 3: 0->1 #3 ->@5", "delay 5: 0->1 #3 ->@7",
+    "send 7: 0->1 #3", "send 8: 1->0 #4", "send 9: 0->1 #5", "send 10: 1->0 #6",
+  ])
+}
+
+///|
 test "max_steps bounds a livelocked handler" {
   let loop_handler : Handler = (node, msg) => {
     [{ from: node, to: (msg.to + 1) % 2, payload: msg.payload, }]
