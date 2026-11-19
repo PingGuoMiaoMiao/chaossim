@@ -80,7 +80,7 @@ let again = @sim.replay_verify(text, reply)
       这个只有双客户端才会现形的真 bug（D9）
 - [x] W3：第二靶子 **MoonAMQP1**（AMQP 1.0，sans-I/O、无内置 broker、11-16 活跃）。
       同一套内核零改动驱动两种协议：MQTT 3.1.1 客户端 + AMQP 1.0 端点对，
-      31/31 测试。AMQP 给出"投递无关不变量"的范例：`credit_before - sends ==
+      39/39 测试。AMQP 给出"投递无关不变量"的范例：`credit_before - sends ==
       link_credit(now)` 在丢传输/丢结算/慢服务下全部成立（D11）
 - [x] W4：**恢复路径验证**——丢 PUBACK → 重连（`session_present=1`）→ `replay_bytes()`
       重放 DUP=1 → 恢复归零，seeds 1..6 全绿；含"不注入故障则无重放"的控制组。
