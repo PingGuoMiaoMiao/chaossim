@@ -35,12 +35,15 @@ pub fn make_handler(w : World) -> @sim.Handler {
   let box : Array[World] = [w]        // 单元素数组换取可变性
   (node, msg) =>
     if node == 0 {
-      step_client(box[0], box[0].frames[msg.payload])   // 你的客户端
+      deliver_to_client(box[0], msg)   // 你的客户端：消费这条消息
+      []                               // 客户端此刻没有要回的帧
     } else {
-      step_peer(box[0], box[0].frames[msg.payload])     // 脚本化的对端
+      step_peer(box[0], box[0].frames[msg.payload])   // 脚本化的对端
     }
 }
 ```
+
+（这一段的形状是**照着跑过**的，见下面的"已验证"。别照着想象中的 API 写。）
 
 对端（broker/服务端）**保持无状态**：只按报文类型回 Ack。一旦你给它加会话表，
 你就开始测试"你写的仿真对端"而不是被测库了。
@@ -85,3 +88,22 @@ assert_eq(w.inflight == w.issued - w.acks, true)   // 与投递无关的记账
 - `adapters/amqp1/`：AMQP 1.0 端点对（credit / settlement）
 
 两份加起来不到 700 行，含测试与 transcript。
+
+## 已验证
+
+`examples/adopting-drill/` 就是一个完全按本指南写出来的第三方小库（一个 REQ/ACK
+状态机，没有一行 chaossim 代码），它作为工作区成员参与 `moon test`：
+
+```
+moon test --target native   # 37 项，其中 3 项来自 adopting-drill
+```
+
+演练结果（2026-11-19）：
+- 三步照做即可编译通过，**无需**改动被测库 `toy.mbt` 一行；
+- 干净线路与"ACK 丢失"两种场景都对账：`in_flight == issued - acks` 成立；
+- 演练过程中发现指南原示例里有一个多余的 `step_client` 桩函数（会触发
+  unused-value 警告），已按实际可编译的形状改写本指南。
+
+**未验证的一点**：registry 安装（`moon add PingGuoMiaoMiao/chaossim`）在
+0.3.0 发布前无法验证，本演练用的是本机工作区按名字解析。发布后应补一次
+真·从零安装演练。

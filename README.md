@@ -99,6 +99,8 @@ let again = @sim.replay_verify(text, reply)
 
 - [docs/adopting.md](docs/adopting.md) —— 30 行接上 chaossim：前提自查、三步胶水、
   不变量怎么挑、四个常见坑（含我们自己踩过的：全局计数器会随种子漂移）。
+  **该指南是可执行的**：`examples/adopting-drill/` 就是按它写出来的第三方小库，
+  作为工作区成员参与 `moon test`，指南失效会直接红。
 - [docs/reports/independent-verification.md](docs/reports/independent-verification.md)
   —— 对 `Duckweed/moon-mqtt` 与 `binhongcha/moonamqp1` 的独立故障注入报告，
   含逐条场景、观察值与未覆盖范围，可直接复跑。

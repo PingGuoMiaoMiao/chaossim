@@ -29,7 +29,9 @@
   credit 记账在丢传输/丢结算/慢服务下全部成立
 - **恢复路径验证**：丢 PUBACK 后按靶子文档的 `reconnect + replay_bytes` 流程
   恢复，重放帧 DUP 标记经解码确认为 1（seeds 1..6），并有"无故障则无重放"
-  控制组；workspace 34/34 测试，
+  控制组
+- **接入指南是可执行的**：`examples/adopting-drill/` 为完全按指南写出的第三方小库，
+  随 `moon test` 一起跑（指南失效即红）；workspace 37/37 测试，
   `moon check --deny-warn` 零警告，公开历史自 11-19
 - 多客户端重构中修复真 bug：broker 应答硬编码回 node0（单客户端永远测不出）
 - 诚实边界：至今未发现靶子的行为 bug；主张的是"故障下可复核的等价类 +
