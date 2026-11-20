@@ -17,9 +17,8 @@ fn show(label : String, s : @adapter.Scenario) -> Unit {
 
 ///|
 fn main {
-  let two : Array[Int] = [
-    @adapter.op_get, @adapter.op_ack, @adapter.op_get, @adapter.op_ack,
-    @adapter.op_delete_probe,
+  let two : Array[Int32] = [
+    @adapter.op_get, @adapter.op_ack, @adapter.op_get, @adapter.op_ack, @adapter.op_delete_probe,
   ]
   // 1) clean wire
   let clean = @adapter.run_script(42, 40, [], 2, two) catch {
@@ -49,7 +48,7 @@ fn main {
   show("broker down from step 1", down)
 
   // 4) reject-with-requeue: the message must come back, not vanish
-  let requeue : Array[Int] = [
+  let requeue : Array[Int32] = [
     @adapter.op_get, @adapter.op_reject, @adapter.op_get,
   ]
   let back = @adapter.run_script(42, 40, [], 1, requeue) catch {

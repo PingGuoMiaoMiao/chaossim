@@ -1,6 +1,6 @@
 import {
-  "PingGuoMiaoMiao/chaossim-adapter-moonmq/adapter" @adapter,
-  "PingGuoMiaoMiao/chaossim/sim" @sim,
+  "PingGuoMiaoMiao/chaossim-adapter-moonmq/adapter",
+  "PingGuoMiaoMiao/chaossim/sim",
 }
 
 pkgtype(kind: "executable")

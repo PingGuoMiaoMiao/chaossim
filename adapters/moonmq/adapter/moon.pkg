@@ -1,5 +1,5 @@
 import {
-  "Zcxssxx/moonmq/src/broker" @broker,
+  "Zcxssxx/moonmq/src/broker",
   "moonbitlang/core/encoding/utf8" @encoding/utf8,
   "PingGuoMiaoMiao/chaossim/sim",
 }

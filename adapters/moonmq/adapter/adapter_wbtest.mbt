@@ -5,8 +5,8 @@
 // silently, and does the broker still account for it".
 
 ///|
-fn script(count : Int) -> Array[Int] {
-  let s : Array[Int] = []
+fn script(count : Int32) -> Array[Int32] {
+  let s : Array[Int32] = []
   for _i = 0; _i < count; _i = _i + 1 {
     s.push(op_get)
     s.push(op_ack)

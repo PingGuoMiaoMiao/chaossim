@@ -15,39 +15,39 @@
 // None of them asserts "the message arrived": under loss it must NOT arrive.
 
 ///|
-pub let op_get : Int = 1
+pub let op_get : Int32 = 1
 
 ///|
-pub let op_ack : Int = 2
+pub let op_ack : Int32 = 2
 
 ///|
-pub let op_delete_probe : Int = 3
+pub let op_delete_probe : Int32 = 3
 
 ///|
-pub let op_reject : Int = 4
+pub let op_reject : Int32 = 4
 
 ///|
-pub let op_stats : Int = 5
+pub let op_stats : Int32 = 5
 
 ///|
-pub let reply_ok : Int = 100
+pub let reply_ok : Int32 = 100
 
 ///|
-pub let reply_none : Int = 101
+pub let reply_none : Int32 = 101
 
 ///|
-pub let reply_refused : Int = 102
+pub let reply_refused : Int32 = 102
 
 ///|
-pub let reply_error : Int = 103
+pub let reply_error : Int32 = 103
 
 ///|
 pub(all) struct World {
   broker : @broker.Broker
   queue : String
-  mut published : Int
-  mut delivered : Int
-  mut acked : Int
+  mut published : Int32
+  mut delivered : Int32
+  mut acked : Int32
   /// every tag the broker handed out, in order
   mut issued_tags : Array[UInt64]
   /// tags the client acknowledged
@@ -55,12 +55,12 @@ pub(all) struct World {
   /// tags still outstanding broker-side
   mut unacked_tags : Array[UInt64]
   /// client operations, applied in order as replies come back
-  mut script : Array[Int]
-  mut pos : Int
-  mut rejected : Int
-  mut stats_counts : Array[Int]
-  mut delete_refused : Int
-  mut delete_allowed : Int
+  mut script : Array[Int32]
+  mut pos : Int32
+  mut rejected : Int32
+  mut stats_counts : Array[Int32]
+  mut delete_refused : Int32
+  mut delete_allowed : Int32
   /// invariant violations, in the order found
   mut bad : Array[String]
 }
@@ -84,7 +84,7 @@ fn without(tags : Array[UInt64], tag : UInt64) -> Array[UInt64] {
 ///|
 /// Set up the broker and fill a queue. Setup is not fault-injected: the
 /// interesting failures live in the delivery/ack path, not in topology creation.
-pub fn setup(count : Int) -> World {
+pub fn setup(count : Int32) -> World {
   let broker = @broker.Broker::new()
   let queue = match broker.declare_queue("chaossim.q") {
     Ok(q) => q
@@ -125,7 +125,7 @@ pub(all) struct Scenario {
 
 ///|
 /// Apply one client operation to the real broker and return the reply code.
-fn apply(w : World, op : Int) -> Int {
+fn apply(w : World, op : Int32) -> Int32 {
   if op == op_get {
     match w.broker.get(w.queue) {
       Ok(Some(d)) => {
@@ -210,14 +210,14 @@ pub fn run_script(
   seed : Int32,
   max_steps : Int32,
   faults : Array[@sim.Fault],
-  count : Int,
-  script : Array[Int],
+  count : Int32,
+  script : Array[Int32],
 ) -> Scenario raise @sim.SimError {
   let w = setup(count)
   w.script = script
   w.pos = 0
   let first = if script.length() > 0 { script[0] } else { op_delete_probe }
-  let initial : Array[@sim.Msg] = [{ from: 0, to: 1, payload: first }]
+  let initial : Array[@sim.Msg] = [{ from: 0, to: 1, payload: first, }]
   // The handler closes over `w`, like the MQTT adapter: the real state machine
   // lives in the World and survives across steps.
   let handler = fn(node : Int32, msg : @sim.Msg) -> Array[@sim.Msg] {
@@ -226,15 +226,15 @@ pub fn run_script(
       // reply never arrives, so the client simply stops where it is.
       w.pos = w.pos + 1
       if w.pos < w.script.length() {
-        return [{ from: 0, to: 1, payload: w.script[w.pos] }]
+        return [{ from: 0, to: 1, payload: w.script[w.pos], }]
       }
       return []
     }
     let reply = apply(w, msg.payload)
-    [{ from: 1, to: 0, payload: reply }]
+    [{ from: 1, to: 0, payload: reply, }]
   }
   let result = @sim.run_bounded(handler, initial, seed, max_steps, faults)
-  { result, world: w }
+  { result, world: w, }
 }
 
 ///|
