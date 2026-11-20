@@ -129,7 +129,7 @@ def check_test_counts(root: Path, total):
         # just as much a claim as "115/115" and was slipping through.
         # "N 个测试文件" counts FILES, not tests - a false positive that only
         # showed up in practice, hence the negative lookahead.
-        re.compile(r"(\d{1,5})\s*(?:个|项)\s*(?:单元法?)?测试(?!\s*文件)", re.I),
+        re.compile(r"(\d{1,5})\s*(?:个|项)\s*(?:单元法?)?测试(?!\s*(?:文件|点|例|处))", re.I),
         re.compile(r"\b(\d{1,5})\s+(?:unit\s+)?tests?\b", re.I),
     ]
     for doc in tracked_markdown(root):

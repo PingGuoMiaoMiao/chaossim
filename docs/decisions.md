@@ -472,7 +472,7 @@ steps=2 delivered=1 dropped=1 / replay_bytes=285 / verified_steps=2
    已知分歧、其余任何诊断一律失败"，并打印该消息保持可见。
 3. **`%TEMP%` 不可写会被读成"测试坏了"**。本机 `moon test` 报 23 个
    `@fs.tmpdir(): Access is denied`。库是对的，是沙箱 ACE 不允许进程在 `%TEMP%`
-   下建目录。修在测试基座（给子进程传可写 TEMP），没有往 23 个测试点撒回退——
+   下建目录。修在测试基座（给子进程传可写 TEMP），没有往那 23 处测试里撒回退——
    也撒不出来，`@fs.tmpdir` 是 async fs 里唯一的唯一目录创建器。
 
 教训：**"本地/CI 绿"只在你确知两边跑同一工具链时才是证据**。版本差一旦存在，
