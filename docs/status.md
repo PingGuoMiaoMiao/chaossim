@@ -14,8 +14,8 @@
 | 测试 | **39 / 39 全绿** | `moon test --target native` |
 | 验收自检 | **8 PASS / 0 WARN / 0 FAIL** | `python tools/acceptance.py --since 2026-11-01` |
 | 文档一致性 | **6 / 6 通过** | `python tools/consistency.py` |
-| 提交数 | 48 | `git rev-list --count HEAD` |
-| 最近提交 | `db53185`（2026-11-20） | `git log -1 --format='%h %ad' --date=short` |
+| 提交数 | 见命令（每次提交都会变，不写死） | `git rev-list --count HEAD` |
+| 最近提交 | 见命令 | `git log -1 --date=short` |
 | GitHub Star / Fork / Issue | 1 / 0 / 0 | `gh api repos/PingGuoMiaoMiao/chaossim` |
 | CI | 全绿（含库 / 工作区 / 两个 transcript / 接入演练 / 自检） | `gh run list --limit 1` |
 
