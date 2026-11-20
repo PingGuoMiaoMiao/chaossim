@@ -7,7 +7,7 @@ it is* (virtual clock), and *which node is down* (crash plan). Every run is
 replayable byte-for-byte from its seed and produces a trace you can diff,
 shrink and attach to an issue.
 
-`v0.3.0` · 45 项测试全绿 · 验收自检 8 PASS / 0 WARN · MIT · CI 覆盖库 + 三个适配器
+`v0.3.0` · 56 项测试全绿 · 验收自检 8 PASS / 0 WARN · MIT · CI 覆盖库 + 三个适配器
 
 ## 你会拿到什么
 
