@@ -102,6 +102,16 @@ jobs:
       - name: The adoption guide still works (adopting-drill)
         run: moon test examples/adopting-drill/drill/src --target native
 
+      # The README advertises these two demos and neither was ever executed here,
+      # so "documented" and "works" were two independent claims. Smoke them.
+      - name: Minimum-kernel demo (cmd/main)
+        run: moon run cmd/main --target native
+
+      - name: Throughput report (cmd/perf)
+        run: |
+          moon run cmd/perf --target native --release | tee perf.txt
+          grep -q "ns/step" perf.txt
+
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
