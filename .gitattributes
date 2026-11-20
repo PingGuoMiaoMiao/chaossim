@@ -1,0 +1,11 @@
+# MoonBit sources are formatted by `moon fmt` and compared byte-for-byte in CI
+# (`moon fmt` then `git diff --exit-code`). Without a normalised checkout the
+# file gains CRLF on some machines and the check fails on content the author
+# never touched.
+* text=auto eol=lf
+
+# Binary assets must never be line-ending converted.
+*.png binary
+*.pdf binary
+*.gif binary
+*.wasm binary

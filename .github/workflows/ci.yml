@@ -86,7 +86,13 @@ jobs:
       - name: The adoption guide still works (adopting-drill)
         run: moon test examples/adopting-drill/drill/src --target native
 
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
       # One command for the whole state of the submission: the acceptance rules
-      # plus the document-vs-code consistency checks.
+      # plus the document-vs-code consistency checks. Python is needed ONLY for
+      # these scripts; the library and both adapters are pure MoonBit.
       - name: Self-check
         run: python tools/selfcheck.py
