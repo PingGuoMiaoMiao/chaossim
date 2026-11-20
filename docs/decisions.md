@@ -432,3 +432,30 @@ steps=2 delivered=1 dropped=1 / replay_bytes=285 / verified_steps=2
 顺手记一个操作教训：用 shell heredoc 往 `.mbt` 里写 `\{expr}` 会被转义吃掉
 一层，导致插值变成字面量。写含插值的 MoonBit 源码要用文件写入工具，不要走 shell
 字符串。
+
+## D27 - CI 从未运行过：三个连环故障，全靠"去看它跑了没有"才暴露
+
+**事实**：chaossim 建仓起 CI 跑了 30 次，**全部失败**；工作流文件语法一直合法——
+所以"YAML 有效"是个毫无用处的检查，真正的检查是**它跑过没有、跑出了什么**。
+
+三个故障叠在一起，修好一层才露出下一层：
+
+1. **引用了不存在的 action**：`moonbitlang/setup-moonbit@main` 返回 404，所有 job
+   在 "Set up job" 就死。
+2. **版本钉死但 CDN 上没有**：安装脚本把版本拼进下载 URL，而
+   `binaries/0.1.20261104/...` 等**所有探过的版本都 403**（只有 `latest` 200，
+   目标名是 `linux-x86_64` 不是 `linux-amd64`）。改为装 latest，**下一步打印
+   `moon version --all`** 记录实际版本——没有的钉死不写在注释里装作有。
+3. **两个只在 CI 条件出现的失败**：
+   - Format：CI 的 moon 是 0.1.20261117，本机 0.1.20261104；新 core 把
+     `@json.JsonPath` 改名 `@json.DecodeContext`，导致 `pkg.generated.mbti` 被
+     重新生成。**生成产物不该被格式门禁管**，改为只查 `*.mbt` / `*.mbt.md`。
+   - Self-check：shallow clone 没有历史，"文档引用的 commit 不存在"报了二十个
+     假阳性。改为 `fetch-depth: 0`，并让工具**识别 shallow 仓库并 SKIP**。
+
+关键教训：**门禁失败时要让它自己输出诊断**。这两步最初只报"失败"，本地复现不了、
+日志接口又 403，白转几轮。给 Format/Self-check 加上失败即打印（改动文件、`cat -A`
+看空白、行尾、python/moon 版本）后一次定位。
+
+另一个发现：本机 `gh` 已登录，`gh run view <id> --log-failed` 能直接读日志，
+比 GitHub API 的 403 好用得多——后续排 CI 应先试它。
