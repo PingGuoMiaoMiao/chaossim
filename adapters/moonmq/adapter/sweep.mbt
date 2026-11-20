@@ -114,8 +114,8 @@ pub fn sweep(
   // Both clients start immediately: whose get reaches the broker first is the
   // seed's decision.
   let initial : Array[@sim.Msg] = [
-    { from: 0, to: 1, payload: op_get },
-    { from: 2, to: 1, payload: op_get },
+    { from: 0, to: 1, payload: op_get, },
+    { from: 2, to: 1, payload: op_get, },
   ]
   let handler = fn(node : Int32, msg : @sim.Msg) -> Array[@sim.Msg] {
     if node != 1 {
@@ -137,34 +137,37 @@ pub fn sweep(
           // V1: the same tag must not already be held by the other client
           let other = 1 - c
           if has(w.held[other], tag) {
-            vnote(w, "V1: tag \{tag} handed to client \{c} while client \{other} holds it")
+            vnote(
+              w,
+              "V1: tag \{tag} handed to client \{c} while client \{other} holds it",
+            )
           }
           if has(w.held[c], tag) {
             vnote(w, "V1: client \{c} was handed tag \{tag} twice")
           }
           w.held[c].push(tag)
-          [{ from: 1, to: node_of(c), payload: reply_ok }]
+          [{ from: 1, to: node_of(c), payload: reply_ok, }]
         }
-        _ => [{ from: 1, to: node_of(c), payload: reply_none }]
+        _ => [{ from: 1, to: node_of(c), payload: reply_none, }]
       }
     } else if msg.payload == op_reject {
       let mine = w.held[c]
       if mine.length() == 0 {
-        [{ from: 1, to: node_of(c), payload: reply_error }]
+        [{ from: 1, to: node_of(c), payload: reply_error, }]
       } else {
         let tag = mine[0]
         match w.broker.reject(tag, true) {
           Ok(_) => {
             w.held[c] = drop_tag(w.held[c], tag)
-            [{ from: 1, to: node_of(c), payload: reply_ok }]
+            [{ from: 1, to: node_of(c), payload: reply_ok, }]
           }
-          Err(_) => [{ from: 1, to: node_of(c), payload: reply_error }]
+          Err(_) => [{ from: 1, to: node_of(c), payload: reply_error, }]
         }
       }
     } else if msg.payload == op_ack {
       let mine = w.held[c]
       if mine.length() == 0 {
-        [{ from: 1, to: node_of(c), payload: reply_error }]
+        [{ from: 1, to: node_of(c), payload: reply_error, }]
       } else {
         let tag = mine[0]
         // V2: only a tag this client holds may be acked
@@ -175,13 +178,13 @@ pub fn sweep(
           Ok(_) => {
             w.held[c] = drop_tag(w.held[c], tag)
             w.acked = w.acked + 1
-            [{ from: 1, to: node_of(c), payload: reply_ok }]
+            [{ from: 1, to: node_of(c), payload: reply_ok, }]
           }
-          Err(_) => [{ from: 1, to: node_of(c), payload: reply_error }]
+          Err(_) => [{ from: 1, to: node_of(c), payload: reply_error, }]
         }
       }
     } else {
-      [{ from: 1, to: node_of(c), payload: reply_error }]
+      [{ from: 1, to: node_of(c), payload: reply_error, }]
     }
   }
   let _res = @sim.run_bounded(handler, initial, seed, max_steps, faults)
