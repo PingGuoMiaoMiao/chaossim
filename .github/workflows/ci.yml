@@ -43,7 +43,16 @@ jobs:
       - name: Format check
         run: |
           moon fmt
-          git diff --exit-code || (echo "::error::moon fmt produced changes; run 'moon fmt' locally" && exit 1)
+          if ! git diff --exit-code; then
+            echo "::error::moon fmt produced changes on the CI runner"
+            echo "--- files touched ---"
+            git diff --stat
+            echo "--- first hunk, whitespace visible ---"
+            git diff --no-color | cat -A | head -40
+            echo "--- line endings of touched files ---"
+            file $(git diff --name-only | head -5) || true
+            exit 1
+          fi
 
   # Workspace members (adapters/, spikes/, examples/) are NOT part of the
   # published package - they depend on third-party libraries the library itself
@@ -95,4 +104,11 @@ jobs:
       # plus the document-vs-code consistency checks. Python is needed ONLY for
       # these scripts; the library and both adapters are pure MoonBit.
       - name: Self-check
-        run: python tools/selfcheck.py
+        run: |
+          python tools/selfcheck.py || {
+            echo "::error::selfcheck failed"
+            python --version
+            moon version --all
+            git status --short | head -20
+            exit 1
+          }
