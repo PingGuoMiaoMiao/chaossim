@@ -40,7 +40,7 @@
   小库，随 `moon test` 跑；指南失效则构建红
 - **性能**：约 460–500 ns / 调度步；1000 种子 × 20 步扫描约 9–10 ms
   （`moon run cmd/perf --release`）——全量种子扫描放 CI 可行
-- **质量门**：39/39 测试、`moon check --deny-warn` 零警告、CI 跑库 + 两个适配器 +
+- **质量门**：45/45 测试、`moon check --deny-warn` 零警告、CI 跑库 + 两个适配器 +
   接入演练 + 验收自检；验收自检 **8 PASS / 0 WARN / 0 FAIL**
 
 ## 工程判断（主动否掉的扩张）

@@ -477,3 +477,28 @@ steps=2 delivered=1 dropped=1 / replay_bytes=285 / verified_steps=2
 
 教训：**"本地/CI 绿"只在你确知两边跑同一工具链时才是证据**。版本差一旦存在，
 门禁要么放宽到失去意义，要么开始说假话；正确做法是把差异显式写出来。
+
+## D29 - 第三个靶子：AMQP 0-9-1 broker（确认/重投记账）
+
+前两个靶子都是**客户端一侧**的逻辑，这次换成**服务端**：`Zcxssxx/moonmq` 的
+`Broker` 有 publish / get / ack / reject / delete_queue / queue_stats 的完整语义，
+正好能被"线上丢失回复"打到。
+
+节点划分同前：节点 1 = 真实 `Broker`，节点 0 = 脚本化客户端（操作码走 `payload`），
+故障注入在两者之间。不变量：
+
+- **I1** 已 ack 的 tag 不会再出现；
+- **I2** 有未确认投递时 `delete_queue(if_empty=false)` 必须被拒绝（broker 没有静默丢消息）；
+- **I3** 记账闭合：`acked + unacked ≤ published`；
+- **I4**（测试）`reject(tag, requeue=true)` 后消息必须能再次被 `get` 到。
+
+**第一版不变量写错了，值得记**：I3 最初写成 `delivered ≤ published`，在"reject 后
+重投"用例上立刻失败。那不是 broker 的 bug，是我把不变量写窄了——**一条消息合法地
+可以被投递两次**。正确约束是记账而不是投递次数。同源教训见 D15/D20：不变量要挑
+"故障下仍然成立"的性质，否则测的是自己的假设。
+
+顺带**实测**了一个语义（非推测）：队列有 1 条未确认投递时
+`queue_stats().message_count()` 返回 1（publish 了 2 条）——只算 ready，不含 unacked。
+
+MoonBit 两个坑：`match` 里小写标识符是**绑定模式**不是常量比较（我最初的分支全部
+命中第一条）；`Broker` 方法返回 `Result` 而非 raise，误用 `catch` 会报 error type mismatched。

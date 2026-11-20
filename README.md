@@ -7,7 +7,7 @@ it is* (virtual clock), and *which node is down* (crash plan). Every run is
 replayable byte-for-byte from its seed and produces a trace you can diff,
 shrink and attach to an issue.
 
-`v0.3.0` · 39 项测试全绿 · 验收自检 8 PASS / 0 WARN · MIT · CI 覆盖库 + 两个适配器
+`v0.3.0` · 45 项测试全绿 · 验收自检 8 PASS / 0 WARN · MIT · CI 覆盖库 + 三个适配器
 
 ## 你会拿到什么
 
@@ -65,7 +65,7 @@ shrink and attach to an issue.
 ## Quick start
 
 需要 MoonBit 工具链（`0.1.20261104` 或更新）。**只有** `tools/` 下的自检脚本需要
-Python 3.9+；库本身与两个适配器都是纯 MoonBit。
+Python 3.9+；库本身与三个适配器都是纯 MoonBit。
 
 从零 clone 后按这个顺序跑，每一条都是独立可验证的（实测总耗时约 8 秒）：
 
@@ -128,8 +128,8 @@ let again = @sim.replay_verify(text, reply)
       链路切断类 seeds 1..6 全对账，途中暴露并修掉"应答硬编码回 node0"
       这个只有双客户端才会现形的真 bug（D9）
 - [x] W3：第二靶子 **MoonAMQP1**（AMQP 1.0，sans-I/O、无内置 broker、11-16 活跃）。
-      同一套内核零改动驱动两种协议：MQTT 3.1.1 客户端 + AMQP 1.0 端点对，
-      39/39 测试。AMQP 给出"投递无关不变量"的范例：`credit_before - sends ==
+      同一套内核零改动驱动三种靶子：MQTT 3.1.1 客户端 + AMQP 1.0 端点对 + AMQP 0-9-1 broker，
+      45/45 测试。AMQP 给出"投递无关不变量"的范例：`credit_before - sends ==
       link_credit(now)` 在丢传输/丢结算/慢服务下全部成立（D11）
 - [x] W4：**恢复路径验证**——丢 PUBACK → 重连（`session_present=1`）→ `replay_bytes()`
       重放 DUP=1 → 恢复归零，seeds 1..6 全绿；含"不注入故障则无重放"的控制组。

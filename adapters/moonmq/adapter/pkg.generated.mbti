@@ -1,0 +1,52 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "PingGuoMiaoMiao/chaossim-adapter-moonmq/adapter"
+
+import {
+  "PingGuoMiaoMiao/chaossim/sim",
+  "Zcxssxx/moonmq/src/broker",
+}
+
+// Values
+pub fn all_invariants_hold(World) -> Bool
+
+pub fn describe(World) -> String
+
+pub fn i1_no_acked_tag_outstanding(World) -> Bool
+
+pub fn i3_accounting_closes(World) -> Bool
+
+pub fn no_bad_events(World) -> Bool
+
+pub fn run_script(Int32, Int32, Array[@sim.Fault], Int32, Array[Int32]) -> Scenario raise @sim.SimError
+
+pub fn setup(Int32) -> World
+
+// Errors
+
+// Types and methods
+pub(all) struct Scenario {
+  result : @sim.RunResult
+  world : World
+}
+
+pub(all) struct World {
+  broker : @broker.Broker
+  queue : String
+  mut published : Int32
+  mut delivered : Int32
+  mut acked : Int32
+  mut issued_tags : Array[UInt64]
+  mut acked_tags : Array[UInt64]
+  mut unacked_tags : Array[UInt64]
+  mut script : Array[Int32]
+  mut pos : Int32
+  mut rejected : Int32
+  mut stats_counts : Array[Int32]
+  mut delete_refused : Int32
+  mut delete_allowed : Int32
+  mut bad : Array[String]
+}
+
+// Type aliases
+
+// Traits

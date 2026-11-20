@@ -43,7 +43,7 @@ consuming PingGuoMiaoMiao/chaossim@0.3.0 from a module outside the repository
 
 | 证据 | 命令 | 说明 |
 | --- | --- | --- |
-| 干净 clone 能跑 | 见 `docs/evidence.md` | 空目录 clone 后 `moon test` 39/39，约 4 秒 |
+| 干净 clone 能跑 | 见 `docs/evidence.md` | 空目录 clone 后 `moon test` 45/45，约 4 秒 |
 | 接入指南可执行 | `moon test examples/adopting-drill/drill/src` | 完全按 `docs/adopting.md` 写出的第三方小库，随测试跑；指南失效即红 |
 | 打包就绪 | `python tools/selfcheck.py --with-publish` | 解压成品包再检查一遍，抓"工作区能跑、包坏了" |
 

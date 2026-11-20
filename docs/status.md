@@ -11,7 +11,7 @@
 | 仓库版本 | `0.3.0` | `moon.mod` 的 `version` |
 | MoonCakes | **未发布** | `moon publish --dry-run` 返回 `Server status: 202 Accepted`（可以发），但尚未 `moon login` → `moon publish` |
 | 打包就绪 | ✅ 成品包解压后**重新检查通过** | `moon publish --dry-run` 会解压 zip 再 check 一遍 |
-| 测试 | **39 / 39 全绿** | `moon test --target native` |
+| 测试 | **45 / 45 全绿** | `moon test --target native` |
 | 验收自检 | **8 PASS / 0 WARN / 0 FAIL** | `python tools/acceptance.py --since 2026-11-01` |
 | 文档一致性 | **6 / 6 通过** | `python tools/consistency.py` |
 | 提交数 | 见命令（每次提交都会变，不写死） | `git rev-list --count HEAD` |
@@ -70,7 +70,7 @@ moon run cmd/perf --target native --release
 **可以主张**（每条有可复跑证据）：
 
 - 在**真实协议代码**上做调度级故障注入（不是仿真你重写的模型），失败场景可逐字节重放；
-- 同一套内核**零改动**驱动两种协议（MQTT 3.1.1 客户端 / AMQP 1.0 端点对）；
+- 同一套内核**零改动**驱动三种靶子（MQTT 3.1.1 客户端 / AMQP 1.0 端点对 / AMQP 0-9-1 broker）；
 - 靶子的**恢复语义被逐项核对**（QoS1 重发 DUP 帧、QoS2 重发 PUBREL），含控制组；
 - 仓库之外的模块能用：注入故障、拿到工件、自证重放；
 - 接入指南是**可执行的**（`examples/adopting-drill/` 随测试跑，指南失效即红）。

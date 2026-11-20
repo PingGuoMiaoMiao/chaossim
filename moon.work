@@ -3,6 +3,7 @@ members = [
   "spikes/mqtt-seam",
   "adapters/mqtt",
   "adapters/amqp1",
+  "adapters/moonmq",
   "examples/adopting-drill/drill",
   "examples/quickstart",
 ]

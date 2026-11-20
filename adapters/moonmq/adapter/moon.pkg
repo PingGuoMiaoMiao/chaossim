@@ -1,0 +1,7 @@
+import {
+  "Zcxssxx/moonmq/src/broker" @broker,
+  "moonbitlang/core/encoding/utf8" @encoding/utf8,
+  "PingGuoMiaoMiao/chaossim/sim",
+}
+
+pkgtype(kind: "library")
