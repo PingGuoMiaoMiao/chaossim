@@ -4,4 +4,5 @@ members = [
   "adapters/mqtt",
   "adapters/amqp1",
   "examples/adopting-drill/drill",
+  "examples/quickstart",
 ]

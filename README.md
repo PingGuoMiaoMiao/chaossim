@@ -76,6 +76,9 @@ moon run adapters/amqp1/bin --target native  # ★ 真实靶子 2：AMQP 1.0（�
 moon run cmd/perf --target native --release  # 吞吐与 CI 预算
 moon run cmd/main --target native            # 最小内核演示：同种子重放 + crash 注入
 
+# 看它到底怎么用：完整可跑的例子（跑一次 / 扫种子 / 出 replay 工件）
+moon run examples/quickstart/src --target native
+
 # 自检：一条命令看全部状态（验收六条 + 文档与代码一致性）
 python tools/selfcheck.py
 # 可选加测：打包就绪（解压成品包再检查一遍，不上传、不需要登录）

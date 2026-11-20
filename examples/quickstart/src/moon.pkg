@@ -1,0 +1,7 @@
+import {
+  "PingGuoMiaoMiao/chaossim/sim",
+}
+
+supported_targets = "wasm+wasm-gc+js+native"
+
+pkgtype(kind: "executable")
