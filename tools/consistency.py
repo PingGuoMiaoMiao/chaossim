@@ -358,6 +358,18 @@ def check_cited_commits(root: Path):
     A changelog that cites a hash which does not exist is worse than one that
     cites nothing: it looks verifiable and is not. Cheap to check, so check it.
     """
+    # A shallow clone holds only recent commits, so "this hash does not exist"
+    # would be false - the history simply is not there. Say that instead of
+    # accusing the docs of citing invented commits.
+    try:
+        shallow = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--is-shallow-repository"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+    except OSError as exc:
+        return ("SKIP", f"cannot inspect repository: {exc}")
+    if "true" in (shallow.stdout or "").lower():
+        return ("SKIP", "shallow clone: cited commits cannot be verified (use fetch-depth: 0)")
     try:
         res = subprocess.run(
             ["git", "-C", str(root), "rev-list", "--abbrev-commit", "--all"],

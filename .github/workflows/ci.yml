@@ -10,10 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # full history: the self-check verifies cited commit hashes
+          fetch-depth: 0
 
-      # The official installer, pinned to the toolchain this project is built
-      # and tested with. Deliberately not a third-party setup action: fewer
-      # moving parts, and the version is visible here.
+      # The official installer, deliberately not a third-party setup action.
+      # No version pin: pinned CDN URLs return 403 for every version probed, so
+      # `latest` is installed and the next step prints the resolved toolchain.
       - name: Install MoonBit
         # The official installer. Version-pinned URLs (binaries/<version>/...)
         # return 403 for every version I probed, including the one this machine
@@ -41,18 +44,19 @@ jobs:
         run: moon test --target native
 
       - name: Format check
+        # Only hand-written sources are gated. `*.generated.mbti` is toolchain
+        # output: a newer moonc renames API symbols in it (observed:
+        # @json.JsonPath -> @json.DecodeContext between 0.1.20261104 and
+        # 0.1.20261117). That is a fact about the compiler, not about style.
         run: |
           moon fmt
-          if ! git diff --exit-code; then
-            echo "::error::moon fmt produced changes on the CI runner"
-            echo "--- files touched ---"
-            git diff --stat
-            echo "--- first hunk, whitespace visible ---"
-            git diff --no-color | cat -A | head -40
-            echo "--- line endings of touched files ---"
-            file $(git diff --name-only | head -5) || true
+          if ! git diff --exit-code -- '*.mbt' '*.mbt.md'; then
+            echo "::error::moon fmt produced changes in hand-written sources"
+            git diff --stat -- '*.mbt' '*.mbt.md'
+            git diff --no-color -- '*.mbt' '*.mbt.md' | cat -A | head -40
             exit 1
           fi
+          echo "generated artifacts not gated:"; git diff --stat -- '*.generated.mbti' || true
 
   # Workspace members (adapters/, spikes/, examples/) are NOT part of the
   # published package - they depend on third-party libraries the library itself
@@ -63,6 +67,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # the self-check verifies commit hashes quoted in the docs
+          fetch-depth: 0
 
       - name: Install MoonBit
         # The official installer. Version-pinned URLs (binaries/<version>/...)
