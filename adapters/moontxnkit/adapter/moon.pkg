@@ -1,0 +1,5 @@
+import {
+  "black-duck666/moontxnkit" @moontxnkit,
+}
+
+pkgtype(kind: "library")

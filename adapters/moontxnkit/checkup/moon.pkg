@@ -1,0 +1,5 @@
+import {
+  "PingGuoMiaoMiao/chaossim-adapter-moontxnkit/adapter" @adapter,
+}
+
+pkgtype(kind: "executable")

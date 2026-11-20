@@ -1,0 +1,68 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "PingGuoMiaoMiao/chaossim-adapter-moontxnkit/adapter"
+
+// Values
+pub fn battery() -> Array[Check]
+
+pub fn judge_abort_leaves_nothing(Bool, Int32) -> Bool
+
+pub fn judge_compact_keeps_current(String?) -> Bool
+
+pub fn judge_dirty_read(Bool) -> Bool
+
+pub fn judge_history_committed_only(Int32, Int32) -> Bool
+
+pub fn judge_loser_left_no_trace(Bool) -> Bool
+
+pub fn judge_read_your_writes(Bool) -> Bool
+
+pub fn judge_snapshot_isolation(Bool) -> Bool
+
+pub fn judge_validate_clean(Int32) -> Bool
+
+pub fn judge_version_per_commit(Int32) -> Bool
+
+pub fn judge_write_conflict(Bool) -> Bool
+
+pub fn verdict_detail(Verdict) -> String
+
+pub fn verdict_mark(Verdict) -> String
+
+pub fn why_abort_leaves_nothing(Bool, Int32) -> String
+
+pub fn why_compact_keeps_current(Bool) -> String
+
+pub fn why_dirty_read(Bool) -> String
+
+pub fn why_history_committed_only(Int32, Int32) -> String
+
+pub fn why_loser_left_no_trace(Bool) -> String
+
+pub fn why_read_your_writes(Bool) -> String
+
+pub fn why_snapshot_isolation(Bool) -> String
+
+pub fn why_validate_clean(Int32) -> String
+
+pub fn why_version_per_commit(Int32) -> String
+
+pub fn why_write_conflict(Bool) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct Check {
+  name : String
+  question : String
+  verdict : Verdict
+}
+
+pub(all) enum Verdict {
+  Pass
+  Risk(String)
+  NotCovered(String)
+}
+
+// Type aliases
+
+// Traits

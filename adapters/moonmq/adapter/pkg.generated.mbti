@@ -17,6 +17,28 @@ pub fn i1_no_acked_tag_outstanding(World) -> Bool
 
 pub fn i3_accounting_closes(World) -> Bool
 
+pub fn judge_ack_after_requeue(Bool) -> Bool
+
+pub fn judge_ack_many(Bool) -> Bool
+
+pub fn judge_cancel(Int32) -> Bool
+
+pub fn judge_delete_refused(Bool) -> Bool
+
+pub fn judge_discard(Bool) -> Bool
+
+pub fn judge_double_ack(Bool) -> Bool
+
+pub fn judge_fanout(Bool, Bool) -> Bool
+
+pub fn judge_isolation(Bool) -> Bool
+
+pub fn judge_prefetch(Bool) -> Bool
+
+pub fn judge_requeue_returns(Bool) -> Bool
+
+pub fn judge_topic(Bool, Bool) -> Bool
+
 pub fn no_bad_events(World) -> Bool
 
 pub let op_ack : Int32
@@ -48,6 +70,28 @@ pub fn verdict_detail(Verdict) -> String
 pub fn verdict_mark(Verdict) -> String
 
 pub fn violations_of(SweepWorld) -> Array[String]
+
+pub fn why_ack_after_requeue(Bool) -> String
+
+pub fn why_ack_many(Bool) -> String
+
+pub fn why_cancel(Int32) -> String
+
+pub fn why_delete(Bool) -> String
+
+pub fn why_discard(Bool) -> String
+
+pub fn why_double_ack(Bool) -> String
+
+pub fn why_fanout(Bool, Bool) -> String
+
+pub fn why_isolation(Bool) -> String
+
+pub fn why_prefetch(Bool) -> String
+
+pub fn why_requeue_returns(Bool) -> String
+
+pub fn why_topic(Bool, Bool) -> String
 
 // Errors
 
