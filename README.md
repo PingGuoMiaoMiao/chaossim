@@ -46,7 +46,7 @@ shrink and attach to an issue.
 
 | 现有方案 | 它做到哪 | chaossim 的差异 |
 | --- | --- | --- |
-| [`oyjh0381/moonlab`](https://github.com/oyjh0381/MoonLab)（Q1 项目，11-12 仍在维护） | 把协议**重写成** typed 纯迁移模型（boot/step/observe），仿真模型本身；含 replay/trace/shrink CLI | 被测对象是**真实代码**而非模型；发现的是实现的 bug，不是模型的 bug。两者互补：moonlab 验证设计，chaossim 验证代码 |
+| [`oyjh0381/moonlab`](https://github.com/oyjh0381/MoonLab)（Q1 项目，11-12 仍在维护） | 把协议**重写成** typed 纯迁移模型（boot/step/observe），仿真模型本身；含 replay/trace/shrink CLI | 被测对象是**真实代码**而非模型——差别在**问题出在哪一层**：模型错了是设计问题，真实代码错了是实现问题。两者互补：moonlab 验证设计，chaossim 验证代码 |
 | [`NekoYume517/lincheck`](https://github.com/NekoYume517/lincheck)、`123123213weqw/moon_historycheck` | 并发历史的线性一致性判定（oracle） | 不重造 oracle，作为检查器接入；chaossim 负责产生可控执行 |
 | `zhangbowen2006/moonbit-target-parity` | 跨后端行为一致性 | 维度不同（后端 vs 调度交错），可同场使用 |
 | `wcx789ll/moonsim` / `mizchi/machinations` | 离散事件仿真（游戏经济/DES） | 目标是协议正确性测试，不是仿真业务 |
