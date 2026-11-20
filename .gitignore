@@ -8,3 +8,5 @@ _build/
 # scratch commit-message files
 _msg.txt
 _m.txt
+
+.testtmp/
