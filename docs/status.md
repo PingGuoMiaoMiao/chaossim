@@ -1,4 +1,3 @@
-<!-- consistency:snapshot: 这是 2026-11-20 的实测快照，数字会随提交变化；当前值请跑文中的命令 -->
 # 当前状态快照（2026-11-20 实测）
 
 > 用途：申报表/验收材料取数用，不必从多份文档里拼。
@@ -97,7 +96,7 @@ moon run cmd/perf --target native --release
 
 这套检查不是装饰。**在本项目**上它拦下过：
 
-- README 里过期的测试数（写 31/31，实为 39）与缺失的 ADR 条目（申报引用 D17 时它还不存在）；
+- README 里过期的测试数（写 31/31，实为 39）与缺失的 ADR 条目（申报引用 D17 时它还不存在）； <!-- consistency:ignore -->
 - README 贴的 transcript 与程序实际输出不符（写 reconciled=true，程序打印 matches=true）；
 - 发布 zip 里混进工作区成员（adapters/、spikes/），外部消费者会拿到引用不到的源码；
 - 验收脚本把测试数报成 26（moon test 不带 --target 时按后端分别打印，脚本只读了第一行）；
