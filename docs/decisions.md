@@ -502,3 +502,23 @@ steps=2 delivered=1 dropped=1 / replay_bytes=285 / verified_steps=2
 
 MoonBit 两个坑：`match` 里小写标识符是**绑定模式**不是常量比较（我最初的分支全部
 命中第一条）；`Broker` 方法返回 `Result` 而非 raise，误用 `catch` 会报 error type mismatched。
+
+## D30 - 审计 moonmq：17 条尖角探针，0 个缺陷，1 个我自己的假警报
+
+原始卖点写着"跑崩 N 次、抓出 M 个真实 bug（附 issue 链接）"。这一轮去兑现它，
+**结果是 0**——必须如实记，而不是把"故障下自洽"包装成"发现了 bug"。
+
+探针覆盖（每条打印靶子的真实回答，断言写"应该"）：重复 ack、reject 后 ack、
+reject(discard) 后的 ready 计数、prefetch=1 的第二次 poll、**cancel 时未确认投递是否
+重投**（答案：会，ready 回到 1）、delete_queue(if_empty) 三态、ack_many 含无效 tag 的
+原子性（答案：整体失败、有效 tag 未被误用）、**跨会话隔离**（ownerB 无法 ack
+ownerA 的 tag）、fanout 扇出、topic 通配、delete_queue(if_unused) 在消费者存在时拒绝。
+
+全部符合 AMQP 语义；该库自带边界测试，质量扎实。
+
+**一个假警报值得入档**：第一版 fanout/topic 探针报"两个队列都没收到"，看着像严重
+bug。查靶子自己的测试才发现是我把 bind_queue(exchange, queue, key) 的参数顺序写反了。
+**排除自身错误之前不要声称对方有缺陷**——这是本轮最大的产出：先读靶子的用法，再判它错。
+
+申报措辞因此定为：不主张"发现上游 bug"，主张"对三个真实靶子做了可复跑的边界审计，
+探针本身公开可复核"。比 bug 标题弱，但它是真的。
