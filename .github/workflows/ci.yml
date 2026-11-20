@@ -15,9 +15,17 @@ jobs:
       # and tested with. Deliberately not a third-party setup action: fewer
       # moving parts, and the version is visible here.
       - name: Install MoonBit
+        # The official installer. Version-pinned URLs (binaries/<version>/...)
+        # return 403 for every version I probed, including the one this machine
+        # runs, so pinning is not possible today; CI installs `latest` and the
+        # next step prints exactly which toolchain it got. If CI ever diverges
+        # from the documented version, that output says so instead of hiding it.
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s "0.1.20261104"
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Toolchain version
+        run: moon version --all
 
       - name: Toolchain version and registry index
         # `moon update` pulls the registry index; without it a clean runner
@@ -48,9 +56,17 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install MoonBit
+        # The official installer. Version-pinned URLs (binaries/<version>/...)
+        # return 403 for every version I probed, including the one this machine
+        # runs, so pinning is not possible today; CI installs `latest` and the
+        # next step prints exactly which toolchain it got. If CI ever diverges
+        # from the documented version, that output says so instead of hiding it.
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s "0.1.20261104"
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Toolchain version
+        run: moon version --all
 
       - name: Registry index
         run: moon update
