@@ -1,8 +1,10 @@
 // Checkup battery: each item drives one recovery/accounting path of a target
-// broker and returns a verdict plus the observation that produced it.
+// broker, then hands the OBSERVATION to a judge from checkup_rules.mbt.
 //
-// This is the "tool" half of the project: a fixed battery you can run against a
-// library and get a report from, instead of a framework you have to assemble.
+// The split matters: observation needs the real library, judging does not, so
+// the judging half can be exercised with deliberately bad input (see
+// checkup_wbtest.mbt). Without that, "11/11 PASS" could not be distinguished
+// from a detector that never fires.
 
 ///|
 /// Verdict for one item.
@@ -33,6 +35,21 @@ fn risk(name : String, question : String, why : String) -> Check {
 ///|
 fn uncovered(name : String, question : String, why : String) -> Check {
   { name, question, verdict: NotCovered(why) }
+}
+
+///|
+/// Judge an observation: bad -> Risk with the reason, good -> Pass.
+fn verdict_of(
+  name : String,
+  question : String,
+  bad : Bool,
+  why : String
+) -> Check {
+  if bad {
+    risk(name, question, why)
+  } else {
+    pass(name, question)
+  }
 }
 
 ///|
@@ -105,12 +122,8 @@ fn check_double_ack() -> Check {
     None => return uncovered(name, question, "拿不到投递")
   }
   let _ = b.ack(tag)
-  let second = b.ack(tag)
-  if second is Ok(_) {
-    risk(name, question, "第二次确认返回成功；重复确认会被静默接受")
-  } else {
-    pass(name, question)
-  }
+  let ok = b.ack(tag) is Ok(_)
+  verdict_of(name, question, judge_double_ack(ok), why_double_ack(ok))
 }
 
 ///|
@@ -124,11 +137,8 @@ fn check_ack_after_requeue() -> Check {
     None => return uncovered(name, question, "拿不到投递")
   }
   let _ = b.reject(tag, true)
-  if b.ack(tag) is Ok(_) {
-    risk(name, question, "旧 tag 仍可确认；可能重复扣减未确认计数")
-  } else {
-    pass(name, question)
-  }
+  let ok = b.ack(tag) is Ok(_)
+  verdict_of(name, question, judge_ack_after_requeue(ok), why_ack_after_requeue(ok))
 }
 
 ///|
@@ -142,10 +152,8 @@ fn check_requeue_returns_message() -> Check {
     None => return uncovered(name, question, "拿不到投递")
   }
   let _ = b.reject(tag, true)
-  match b.get(q) {
-    Ok(Some(_)) => pass(name, question)
-    _ => risk(name, question, "reject(requeue) 之后队列里取不到消息：消息丢失")
-  }
+  let again = b.get(q) is Ok(Some(_))
+  verdict_of(name, question, judge_requeue_returns(again), why_requeue_returns(again))
 }
 
 ///|
@@ -159,10 +167,8 @@ fn check_discard_drops_message() -> Check {
     None => return uncovered(name, question, "拿不到投递")
   }
   let _ = b.reject(tag, false)
-  match b.get(q) {
-    Ok(Some(_)) => risk(name, question, "已丢弃的消息又被取出：丢弃无效")
-    _ => pass(name, question)
-  }
+  let again = b.get(q) is Ok(Some(_))
+  verdict_of(name, question, judge_discard(again), why_discard(again))
 }
 
 ///|
@@ -177,10 +183,8 @@ fn check_prefetch_blocks() -> Check {
     Err(_) => return uncovered(name, question, "consume 失败")
   }
   let _ = b.poll(h)
-  match b.poll(h) {
-    Ok(Some(_)) => risk(name, question, "第二次 poll 仍投递：预取上限失效（可能撑爆客户端内存）")
-    _ => pass(name, question)
-  }
+  let second = b.poll(h) is Ok(Some(_))
+  verdict_of(name, question, judge_prefetch(second), why_prefetch(second))
 }
 
 ///|
@@ -195,15 +199,11 @@ fn check_cancel_requeues() -> Check {
   }
   let _ = b.poll(h)
   let _ = b.cancel_consumer(h)
-  match b.queue_stats(q) {
-    Ok(s) =>
-      if s.message_count() >= 1 {
-        pass(name, question)
-      } else {
-        risk(name, question, "取消后队列为空：未确认消息既没重投也没人能确认，消息悬空")
-      }
-    _ => uncovered(name, question, "拿不到队列统计")
+  let ready = match b.queue_stats(q) {
+    Ok(s) => s.message_count()
+    Err(_) => return uncovered(name, question, "拿不到队列统计")
   }
+  verdict_of(name, question, judge_cancel(ready), why_cancel(ready))
 }
 
 ///|
@@ -213,10 +213,8 @@ fn check_delete_refused_while_unacked() -> Check {
   let (b, q) = fresh("chk.delete")
   put(b, q, "a")
   let _tag = take(b, q)
-  match b.delete_queue(q, false, false) {
-    Ok(_) => risk(name, question, "队列被删掉了，未确认消息随之消失：静默丢数据")
-    _ => pass(name, question)
-  }
+  let deleted = b.delete_queue(q, false, false) is Ok(_)
+  verdict_of(name, question, judge_delete_refused(deleted), why_delete(deleted))
 }
 
 ///|
@@ -235,12 +233,9 @@ fn check_ack_many_atomic() -> Check {
     None => return uncovered(name, question, "拿不到第二条投递")
   }
   let _ = b.ack_many_with_owner("", [t1, t2 + 99UL])
-  // if the batch failed atomically, t1 is still confirmable
-  if b.ack(t2) is Ok(_) {
-    pass(name, question)
-  } else {
-    risk(name, question, "批量确认部分生效，调用方无法判断哪些被确认")
-  }
+  // if the batch failed atomically, t2 is still confirmable
+  let t2_ok = b.ack(t2) is Ok(_)
+  verdict_of(name, question, judge_ack_many(t2_ok), why_ack_many(t2_ok))
 }
 
 ///|
@@ -253,11 +248,8 @@ fn check_cross_session_isolation() -> Check {
     Ok(Some(d)) => d.tag()
     _ => return uncovered(name, question, "拿不到投递")
   }
-  if b.ack_with_owner("ownerB", tag) is Ok(_) {
-    risk(name, question, "另一个会话能确认别人的投递：隔离失效")
-  } else {
-    pass(name, question)
-  }
+  let stolen = b.ack_with_owner("ownerB", tag) is Ok(_)
+  verdict_of(name, question, judge_isolation(stolen), why_isolation(stolen))
 }
 
 ///|
@@ -279,15 +271,9 @@ fn check_fanout() -> Check {
   ignore(b.publish("chk.fx", "", @encoding/utf8.encode("broadcast")))
   let got1 = b.get(q1) is Ok(Some(_))
   let got2 = b.get(q2) is Ok(Some(_))
-  if got1 && got2 {
-    pass(name, question)
-  } else {
-    risk(
-      name,
-      question,
-      "扇出未送达全部队列（q1=\{got1} q2=\{got2}）",
-    )
-  }
+  verdict_of(
+    name, question, judge_fanout(got1, got2), why_fanout(got1, got2),
+  )
 }
 
 ///|
@@ -305,11 +291,5 @@ fn check_topic_wildcard() -> Check {
   let matched = b.get(q) is Ok(Some(_))
   ignore(b.publish("chk.tx", "other.low", @encoding/utf8.encode("m2")))
   let leaked = b.get(q) is Ok(Some(_))
-  if matched && !leaked {
-    pass(name, question)
-  } else if !matched {
-    risk(name, question, "通配符没匹配到应匹配的 key：消息会路由丢失")
-  } else {
-    risk(name, question, "不匹配的 key 也被投递：消息会被错误路由")
-  }
+  verdict_of(name, question, judge_topic(matched, leaked), why_topic(matched, leaked))
 }

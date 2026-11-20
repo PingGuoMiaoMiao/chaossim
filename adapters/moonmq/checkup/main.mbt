@@ -96,6 +96,21 @@ fn main raise @sim.SimError {
     println("首个违规：" + first)
   }
   println("")
+  println("## 检测能力自检（这份报告凭什么不是橡皮章）")
+  println("")
+  println(
+    "11 条判定规则都与\"调用库\"分开，各自用**故意给错的输入**跑过：每一条的 RISK 分支都被验证会触发（`moon test adapters/moonmq/adapter`，4 条对照测试）。",
+  )
+  println("")
+  println("| 层 | 已证 | 未证 |")
+  println("| --- | --- | --- |")
+  println(
+    "| 判定 | 坏输入必然报 RISK，好输入必然报 PASS | - |",
+  )
+  println(
+    "| 观测 | 检查确实调用了库的公开 API | **尚未**用一个真实写坏的库端到端验证 |",
+  )
+  println("")
   println("## 这个报告能被伪造吗")
   println("")
   println("每一项都直接调用库的公开 API 并打印它的回答；报告里的字句来自代码，不是模板。复跑：")
