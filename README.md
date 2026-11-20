@@ -197,6 +197,11 @@ moon run cmd/perf --target native --release
    `%TEMP%` 不允许进程建目录。把 `TEMP`/`TMP` 指到可写目录即可（自检脚本已自动指向
    工程内 `.testtmp/`）；库代码无需改动。
 
+## 当前状态
+
+[docs/status.md](docs/status.md) 是**实测快照**：版本、发布就绪、测试/验收/一致性结果、
+性能数字、可主张与不可主张清单，每条都带取值命令。
+
 ## 证据索引
 
 [docs/evidence.md](docs/evidence.md) 把每一条对外主张映射到**一条复跑命令**和
