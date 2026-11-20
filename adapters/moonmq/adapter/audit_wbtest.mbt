@@ -68,7 +68,9 @@ test "reject(requeue=false) discards" {
   }
   println("reject(discard) ok? \{b.reject(tag, false) is Ok(_)}")
   println("ready after discard: \{ready(b, q)}   (expected: 0)")
-  println("get after discard has delivery? \{tag_of(b, q) is Some(_)}   (expected: false)")
+  println(
+    "get after discard has delivery? \{tag_of(b, q) is Some(_)}   (expected: false)",
+  )
 }
 
 ///|
@@ -110,16 +112,22 @@ test "delete_queue(if_empty=true) around ack" {
   pub1(b, q, "a")
   let ready_before = ready(b, q)
   let deleted_while_ready = b.delete_queue(q, false, true)
-  println("ready=\{ready_before}; delete if_empty while ready ok? \{deleted_while_ready is Ok(_)}   (expected: false)")
+  println(
+    "ready=\{ready_before}; delete if_empty while ready ok? \{deleted_while_ready is Ok(_)}   (expected: false)",
+  )
   let tag = match tag_of(b, q) {
     Some(t) => t
     None => abort("expected a delivery")
   }
   let deleted_while_unacked = b.delete_queue(q, false, true)
-  println("delete if_empty while unacked ok? \{deleted_while_unacked is Ok(_)}   (expected: false)")
+  println(
+    "delete if_empty while unacked ok? \{deleted_while_unacked is Ok(_)}   (expected: false)",
+  )
   ignore(b.ack(tag))
   let deleted_after = b.delete_queue(q, false, true)
-  println("delete if_empty after ack ok? \{deleted_after is Ok(_)}   (expected: true)")
+  println(
+    "delete if_empty after ack ok? \{deleted_after is Ok(_)}   (expected: true)",
+  )
 }
 
 ///|
@@ -136,7 +144,13 @@ test "ack_many with one bogus tag" {
     None => abort("expected a delivery")
   }
   let bogus = t2 + 99UL
-  println("ack_many [valid, bogus] ok? \{b.ack_many_with_owner("", [t1, bogus]) is Ok(_)}")
-  println("  -> if Ok, was the valid tag still applied? ack(t2) ok? \{b.ack(t2) is Ok(_)}")
-  println("  (a partial ack reported as Ok is an atomicity question worth knowing)")
+  println(
+    "ack_many [valid, bogus] ok? \{b.ack_many_with_owner("", [t1, bogus]) is Ok(_)}",
+  )
+  println(
+    "  -> if Ok, was the valid tag still applied? ack(t2) ok? \{b.ack(t2) is Ok(_)}",
+  )
+  println(
+    "  (a partial ack reported as Ok is an atomicity question worth knowing)",
+  )
 }

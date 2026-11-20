@@ -27,9 +27,13 @@ test "cross-session: another owner must not ack my delivery" {
   }
   // owner B tries to acknowledge it
   let stolen = b.ack_with_owner("ownerB", tag)
-  println("ownerB acking ownerA's tag ok? \{stolen is Ok(_)}   (expected: false)")
+  println(
+    "ownerB acking ownerA's tag ok? \{stolen is Ok(_)}   (expected: false)",
+  )
   // and the rightful owner can still ack it
-  println("ownerA ack ok? \{b.ack_with_owner("ownerA", tag) is Ok(_)}   (expected: true)")
+  println(
+    "ownerA ack ok? \{b.ack_with_owner("ownerA", tag) is Ok(_)}   (expected: true)",
+  )
 }
 
 ///|
@@ -77,8 +81,12 @@ test "delete_queue(if_unused=true) with a consumer attached" {
     Err(_) => abort("consume failed")
   }
   let deleted = b.delete_queue(q, true, false)
-  println("delete if_unused with a consumer ok? \{deleted is Ok(_)}   (expected: false)")
+  println(
+    "delete if_unused with a consumer ok? \{deleted is Ok(_)}   (expected: false)",
+  )
   ignore(b.cancel_consumer(h))
   let after = b.delete_queue(q, true, false)
-  println("delete if_unused after cancel ok? \{after is Ok(_)}   (expected: true)")
+  println(
+    "delete if_unused after cancel ok? \{after is Ok(_)}   (expected: true)",
+  )
 }
