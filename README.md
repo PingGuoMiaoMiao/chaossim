@@ -79,6 +79,10 @@ moon run cmd/main --target native            # 最小内核演示：同种子重
 # 看它到底怎么用：完整可跑的例子（跑一次 / 扫种子 / 出 replay 工件）
 moon run examples/quickstart/src --target native
 
+# 体检一个协议库：11 项恢复/记账检查 + 并发交错扫描，直接出 Markdown 报告
+moon run adapters/moonmq/checkup --target native
+# 样板报告（由上面那条命令生成，不是手写）：docs/checkup-moonmq.md
+
 # 自检：一条命令看全部状态（验收六条 + 文档与代码一致性）
 python tools/selfcheck.py
 # 可选加测：打包就绪（解压成品包再检查一遍，不上传、不需要登录）

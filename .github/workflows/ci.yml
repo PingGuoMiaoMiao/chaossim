@@ -100,6 +100,13 @@ jobs:
       - name: Run the AMQP 0-9-1 broker transcript
         run: moon run adapters/moonmq/bin --target native
 
+      # The tool form of the project: if the report generator breaks, the one
+      # thing most readers will run is broken.
+      - name: Protocol checkup report
+        run: |
+          moon run adapters/moonmq/checkup --target native | tee checkup.txt
+          grep -q "通过" checkup.txt
+
       # docs/adopting.md is executable documentation: this member is a
       # third-party-shaped library written by following the guide, so a stale
       # guide fails CI instead of quietly misleading readers.

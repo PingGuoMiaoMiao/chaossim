@@ -1,0 +1,6 @@
+import {
+  "PingGuoMiaoMiao/chaossim-adapter-moonmq/adapter" @adapter,
+  "PingGuoMiaoMiao/chaossim/sim" @sim,
+}
+
+pkgtype(kind: "executable")
