@@ -459,3 +459,21 @@ steps=2 delivered=1 dropped=1 / replay_bytes=285 / verified_steps=2
 
 另一个发现：本机 `gh` 已登录，`gh run view <id> --log-failed` 能直接读日志，
 比 GitHub API 的 403 好用得多——后续排 CI 应先试它。
+
+## D28 - 工具链版本差让"本地绿"与"CI 绿"不再是同一件事
+
+三件事互不相同，共同点是**都不会让测试失败，只会让门禁说谎**：
+
+1. **`moon check` 是增量的**。本地打印 "no work to do"，把真实警告藏了；CI 全量才报。
+2. **两个工具链判据相反**。`core/` 里 `moonbitlang/core/json` 这一行：本机
+   0.1.20261104 **必须**有（去掉就 `Cannot use @json` 编不过）；CI 的 0.1.20261117
+   判它 `unused_package`，`--deny-warn` 直接失败。而 CDN 上所有带版本号的 URL 都
+   403，只有 `latest` 可安装——无法钉死版本。因此 CI 的警告门禁改为"允许这一条
+   已知分歧、其余任何诊断一律失败"，并打印该消息保持可见。
+3. **`%TEMP%` 不可写会被读成"测试坏了"**。本机 `moon test` 报 23 个
+   `@fs.tmpdir(): Access is denied`。库是对的，是沙箱 ACE 不允许进程在 `%TEMP%`
+   下建目录。修在测试基座（给子进程传可写 TEMP），没有往 23 个测试点撒回退——
+   也撒不出来，`@fs.tmpdir` 是 async fs 里唯一的唯一目录创建器。
+
+教训：**"本地/CI 绿"只在你确知两边跑同一工具链时才是证据**。版本差一旦存在，
+门禁要么放宽到失去意义，要么开始说假话；正确做法是把差异显式写出来。
