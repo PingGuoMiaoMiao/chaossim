@@ -82,6 +82,7 @@ moon run examples/quickstart/src --target native
 # 体检一个协议库：11 项恢复/记账检查 + 并发交错扫描，直接出 Markdown 报告
 moon run adapters/moonmq/checkup --target native
 # 样板报告（由上面那条命令生成，不是手写）：docs/checkup-moonmq.md
+# 想给别的库做体检：docs/checkup-guide.md（判定层可抄，观测层必须重写）
 
 # 自检：一条命令看全部状态（验收六条 + 文档与代码一致性）
 python tools/selfcheck.py

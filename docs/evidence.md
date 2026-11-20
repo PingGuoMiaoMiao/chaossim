@@ -31,6 +31,7 @@
 | 接入指南 / 从零演练 | `docs/adopting.md`、`examples/adopting-drill/` |
 | 上游验证报告 | `docs/reports/independent-verification.md` |
 | 采用记录（未发布阶段能证明什么） | `docs/adoption.md`、`tools/consumer_check.py` |
+| 体检工具与样板报告 | `adapters/moonmq/checkup`、`docs/checkup-moonmq.md`、`docs/checkup-guide.md` |
 | 运行时可行性裁决 | `docs/v0.3-async-verdict.md`（含行号） |
 | 每一个取舍的理由 | `docs/decisions.md`（D1–D17） |
 | 靶子选型与被否候选 | `docs/w2-targets.md` |
