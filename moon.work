@@ -5,6 +5,7 @@ members = [
   "adapters/amqp1",
   "adapters/moonmq",
   "adapters/moontxnkit",
+  "adapters/moonredis",
   "examples/adopting-drill/drill",
   "examples/quickstart",
 ]

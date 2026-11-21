@@ -1,0 +1,30 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "PingGuoMiaoMiao/chaossim-adapter-moonredis/adapter"
+
+// Values
+pub fn battery() -> Array[Case]
+
+pub fn check_deep_nesting() -> Case
+
+pub fn check_garbage() -> Case
+
+pub fn check_round_trip() -> Case
+
+pub fn check_trailing() -> Case
+
+pub fn check_truncation_rejected() -> Case
+
+pub fn describe(Case) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct Case {
+  name : String
+  ok : Bool
+  detail : String
+}
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,5 @@
+import {
+  "PingGuoMiaoMiao/chaossim-adapter-moonredis/adapter" @adapter,
+}
+
+pkgtype(kind: "executable")
