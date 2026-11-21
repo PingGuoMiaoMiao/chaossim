@@ -46,7 +46,7 @@ fn noise(seed : Int32, len : Int32) -> Bytes {
   let mut i = 0
   while i < len {
     state = state ^ (state << 13)
-    state = state ^ (state.lsr(17))
+    state = state ^ (state >> 17)
     state = state ^ (state << 5)
     out.push(((state >> 24) & 0xFF).to_byte())
     i = i + 1
