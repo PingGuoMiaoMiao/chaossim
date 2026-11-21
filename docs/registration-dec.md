@@ -54,7 +54,7 @@ moon fetch moonbit-community/lincheck            # -> was not found in the regis
   + 有界运行 + trace/计数；`Replay` JSON 工件自包含"场景+结果"，换实现必报分歧
 - **不变量钩子**：按**每一步**回调，不只看结尾。三条内置钩子均为投递无关：计数不为负、
   `delivered + dropped == step`（抓消息凭空消失）、trace 不得有空行（防静默步骤）
-- **线性一致性检查**：7 条测试**双向**验证——顺序一致通过、**实时序禁止的旧读被拒绝**、
+- **线性一致性检查**：6 条测试**双向**验证——顺序一致通过、**实时序禁止的旧读被拒绝**、
   **写偏斜被拒绝**、并发的两个读可通过、未返回操作不约束、预算耗尽报 unknown 而非通过
 - **三个真实靶子，同一套内核零改动**（分两个域）：
   - **消息域**：`Duckweed/moon-mqtt`（MQTT 3.1.1 客户端）、`binhongcha/moonamqp1`
@@ -75,7 +75,7 @@ moon fetch moonbit-community/lincheck            # -> was not found in the regis
   （`moon run cmd/perf --release`）——全量种子扫描放 CI 可行
 - **质量门**：**74/74** 测试、`moon check --deny-warn` 零警告、CI 跑库 + 四个适配器
   + 体检报告 + 接入演练 + 验收自检；验收自检 **8 PASS / 0 WARN / 0 FAIL**，
-  文档一致性 **7/7**
+  文档一致性 **8/8**
 
 ## 工程判断（主动否掉的扩张）
 
@@ -84,7 +84,7 @@ moon fetch moonbit-community/lincheck            # -> was not found in the regis
    sans-I/O 状态机；"对真实 async 程序做事件注入"最多半确定性，**不会被包装成可重放**。
 2. **不以 `moonbitstack/moonraft` 为靶**：它自带确定性模拟簇（丢包/延迟/乱序/分区 +
    etcd 语料逐字节回放），在它身上注入故障等于复述它自己的测试。
-3. **不以 `Zcxssxx/moonmq` 的"发现 bug"为目标**：17 条尖角探针 + 320 次交错扫描后
+3. **不以 `Zcxssxx/moonmq` 的"发现 bug"为目标**：11 条尖角探针 + 320 次交错扫描后
    未发现缺陷，结论如实记为 0，而不是把"故障下自洽"包装成"发现 bug"。
 
 ## 不主张什么
@@ -94,7 +94,8 @@ moon fetch moonbit-community/lincheck            # -> was not found in the regis
   仍可精确重放），这些任何人都能复跑核对。
 - **不主张"比 Jepsen 更强"**：只做进程内、单机、可重放这一层。
 - **不主张体检报告"已证明会发现问题"**：11 条判定规则各自用故意给错的输入验证过
-  会报 RISK（27 个断言），但**观测层**——用一个真实写坏的库端到端跑——尚未完成。
+  会报 RISK、用合法输入验证不会误报（`checkup_wbtest.mbt` 39 条断言，正反两个方向），
+  但**观测层**——用一个真实写坏的库端到端跑——尚未完成。
   报告里把这两层分开写，不合并成"工具可靠"。
 - **不主张"已被采用"**：star 1 / fork 0 / issue 0，`docs/adoption.md` 列了四项判据
   当前全为 0。

@@ -186,7 +186,7 @@ moon run cmd/perf --target native --release
 
 | 门禁 | 抓什么 |
 | --- | --- |
-| `tools/consistency.py` | 测试数/ADR 数/ADR 编号/相对链接/引用的 commit 是否存在/**贴出的输出是否逐字为真** |
+| `tools/consistency.py` | 测试数/ADR 数/ADR 编号/相对链接/引用的 commit 是否存在/**贴出的输出是否逐字为真**/探针与断言等派生计数 |
 | `tools/acceptance.py` | 赛事验收六条（MoonBit 为主、历史、可运行、许可、AI 可解释等） |
 | `--with-publish` | 成品包解压后能否通过检查（抓"工作区能跑、打包后坏"） |
 | `--with-registry` | 关于已发布版本/下载数的说法是否与 mooncakes.io 一致 |

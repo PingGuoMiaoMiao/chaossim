@@ -465,6 +465,75 @@ def adr_total(root: Path):
     return len([1 for line in read(path).splitlines() if re.match(r"^##\s+D\d+", line)])
 
 
+def check_derived_counts(root: Path):
+    """Counts derived from the test files must equal what the docs claim.
+
+    Written after the registration document claimed "17 条尖角探针" while the
+    two probe files hold 11 test blocks: an estimate had been copied forward
+    until it read as a count. The test-total guard did not catch it because its
+    patterns want "个/项", and the ADR guard does not look at these numbers at
+    all. Fixing the prose alone lets it drift again, so it gets a rule.
+    """
+    adapter = root / "adapters" / "moonmq" / "adapter"
+    probes = None
+    if adapter.is_dir():
+        files = sorted(adapter.glob("audit*_wbtest.mbt"))
+        if files:
+            probes = sum(
+                len([1 for line in read(f).splitlines() if line.startswith("test ")])
+                for f in files
+            )
+    lin_path = root / "sim" / "hooks_lincheck_wbtest.mbt"
+    lin = None
+    if lin_path.is_file():
+        lin = len([1 for line in read(lin_path).splitlines()
+                   if line.startswith('test "lincheck:')])
+    checkup = adapter / "checkup_wbtest.mbt"
+    asserts = None
+    if checkup.is_file():
+        asserts = len(re.findall(r"assert_(?:true|false|eq)\s*\(|inspect\s*\(", read(checkup)))
+
+    # (label, compiled pattern, real value). Each pattern is narrow on purpose:
+    # "N 条断言" also appears about an unrelated spike in decisions.md, and a
+    # guard that fires on the wrong subject gets switched off.
+    rules = [
+        ("probe", re.compile(r"(\d{1,4})\s*条(?:尖角)?探针"), probes),
+        ("lincheck", re.compile(r"线性一致性检查[^\d\n]{0,8}(\d{1,4})\s*条测试"), lin),
+        ("assertion", re.compile(r"checkup_wbtest\.mbt`?\s*(\d{1,4})\s*条断言"), asserts),
+    ]
+    findings = []
+    scanned = 0
+    for doc in tracked_markdown(root):
+        rel = doc.relative_to(root).as_posix()
+        body = read(doc)
+        declares_snapshot = any(
+            line.strip().startswith("<!-- consistency:snapshot")
+            for line in body.splitlines()
+        )
+        if rel in SNAPSHOT_FILES or declares_snapshot:
+            continue
+        for lineno, line in enumerate(body.splitlines(), 1):
+            if LINE_IGNORE in line:
+                continue
+            for label, pattern, real in rules:
+                if real is None:
+                    continue
+                for m in pattern.finditer(line):
+                    value = int(m.group(1))
+                    if value < 2 or value > 100_000:
+                        continue
+                    scanned += 1
+                    if value != real:
+                        findings.append(
+                            f"{rel}:{lineno}: claims {value} for {label}, real count is {real}"
+                        )
+    if findings:
+        return ("FAIL", "; ".join(findings[:6]))
+    if scanned == 0:
+        return ("SKIP", "no derived-count claims found (scan may be broken)")
+    return ("PASS", f"{scanned} derived-count claim(s) match the test files")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--project", default=".")
@@ -488,6 +557,7 @@ def main() -> int:
         ("Cited commits", check_cited_commits(root)),
         ("Version", check_version_literals(root)),
         ("ADR counts", check_adr_count_claims(root, adr_total(root))),
+        ("Derived counts", check_derived_counts(root)),
     ]
     if args.with_registry:
         results.append(("Registry", check_registry_facts(root)))

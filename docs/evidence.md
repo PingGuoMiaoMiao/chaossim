@@ -61,7 +61,7 @@
 | `moon run adapters/amqp1/bin --target native` | 0 | 1.2 s |
 | `moon run cmd/main --target native` | 0 | 0.6 s |
 | `python tools/acceptance.py --skip-build` | 0 | 7 pass / 1 warn（跳过构建的提示） |
-| `python tools/consistency.py --skip-build` | 0 | 3 ok / 0 fail |
+| `python tools/consistency.py --skip-build` | 0 | 8 ok / 0 fail |
 
 **这次演练改掉了一条真问题**：原本的 Quick start 只有三条命令
 （build / test / run cmd/main），新读者照它走**永远看不到两个真实靶子**——
