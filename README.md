@@ -7,7 +7,7 @@ it is* (virtual clock), and *which node is down* (crash plan). Every run is
 replayable byte-for-byte from its seed and produces a trace you can diff,
 shrink and attach to an issue.
 
-`v0.3.0` · 64 项测试全绿 · 验收自检 8 PASS / 0 WARN · MIT · CI 覆盖库 + 三个适配器
+`v0.3.0` · 74 项测试全绿 · 验收自检 8 PASS / 0 WARN · MIT · CI 覆盖库 + 三个适配器
 
 ## 你会拿到什么
 
@@ -136,7 +136,7 @@ let again = @sim.replay_verify(text, reply)
       这个只有双客户端才会现形的真 bug（D9）
 - [x] W3：第二靶子 **MoonAMQP1**（AMQP 1.0，sans-I/O、无内置 broker、11-16 活跃）。
       同一套内核零改动驱动三种靶子：MQTT 3.1.1 客户端 + AMQP 1.0 端点对 + AMQP 0-9-1 broker，
-      64/64 测试。AMQP 给出"投递无关不变量"的范例：`credit_before - sends ==
+      74/74 测试。AMQP 给出"投递无关不变量"的范例：`credit_before - sends ==
       link_credit(now)` 在丢传输/丢结算/慢服务下全部成立（D11）
 - [x] W4：**恢复路径验证**——丢 PUBACK → 重连（`session_present=1`）→ `replay_bytes()`
       重放 DUP=1 → 恢复归零，seeds 1..6 全绿；含"不注入故障则无重放"的控制组。

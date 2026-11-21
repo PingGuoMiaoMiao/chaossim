@@ -11,7 +11,7 @@
 | 仓库版本 | `0.3.0` | `moon.mod` 的 `version` |
 | MoonCakes | **未发布** | `moon publish --dry-run` 返回 `Server status: 202 Accepted`（可以发），但尚未 `moon login` → `moon publish` |
 | 打包就绪 | ✅ 成品包解压后**重新检查通过** | `moon publish --dry-run` 会解压 zip 再 check 一遍 |
-| 测试 | **64 / 64 全绿** | `moon test --target native` |
+| 测试 | **74 / 74 全绿** | `moon test --target native` |
 | 验收自检 | **8 PASS / 0 WARN / 0 FAIL** | `python tools/acceptance.py --since 2026-11-01` |
 | 文档一致性 | **6 / 6 通过** | `python tools/consistency.py` |
 | 提交数 | 见命令（每次提交都会变，不写死） | `git rev-list --count HEAD` |
