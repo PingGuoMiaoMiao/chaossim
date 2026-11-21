@@ -212,6 +212,8 @@ moon run cmd/perf --target native --release
 [docs/status.md](docs/status.md) 是**实测快照**：版本、发布就绪、测试/验收/一致性结果、
 性能数字、可主张与不可主张清单，每条都带取值命令。
 
+> 十二月赛申报书：[docs/application-dec.md](docs/application-dec.md)（标准格式）与 [docs/registration-dec.md](docs/registration-dec.md)（一页纸）。
+
 ## 证据索引
 
 [docs/evidence.md](docs/evidence.md) 把每一条对外主张映射到**一条复跑命令**和
