@@ -84,6 +84,8 @@ moon run adapters/moonmq/checkup --target native
 # 样板报告（上面这条生成，不是手写）：docs/checkup-moonmq.md
 # 第二个域（MVCC 事务引擎，问题完全不同）：
 moon run adapters/moontxnkit/checkup --target native   # 报告：docs/checkup-moontxnkit.md
+# 第三种目标类型（纯编解码器：往返 / 截断 / 随机字节 / 深嵌套）
+moon run adapters/moonredis/checkup --target native
 # 想给别的库做体检：docs/checkup-guide.md（判定层可抄，观测层必须重写）
 
 # 自检：一条命令看全部状态（验收六条 + 文档与代码一致性）

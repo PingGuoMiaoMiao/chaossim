@@ -53,13 +53,15 @@ chaossim 把它变成 `moon test` 里秒级完成、同种子必定复现的一�
   - `binhongcha/moonamqp1`（AMQP 1.0）：credit / settlement 记账在丢传输、丢结算、慢服务下成立；
   - `Zcxssxx/moonmq`（AMQP 0-9-1 broker）：**服务端**语义，确认/重投/预取记账；
   - `black-duck666/moontxnkit`（MVCC 事务引擎）：隔离、冲突检测、恢复；
+  - `moonbitstack/moonredis`（RESP2/RESP3 纯编解码器）：第三种目标类型，没有消息可丢，
+    审计按 codec 的性质重写（往返、截断必拒、随机字节不崩、深嵌套不爆栈）；
 - **恢复路径按靶子文档逐项核对**：丢 PUBACK → `reconnect` + `replay_bytes()` → 重发
   DUP=1 的 PUBLISH（DUP 位解码读回确认）；丢 PUBCOMP → 重发 PUBREL（另一条分支，
   独立计数器防止互相冒充）；含"不注入故障则无重放"的控制组；
 - **接入指南是可执行的**：`examples/adopting-drill/` 是完全按指南写出的第三方小库，
   随 `moon test` 跑，指南失效则构建红；`examples/quickstart/` 为最小可跑示例；
 - **质量门与自检**：**74/74** 测试、`moon check --deny-warn` 零警告、CI 覆盖库 +
-  四个适配器 + 两份体检报告 + 接入演练 + 验收自检；三档自检
+  五个适配器 + 三份审计/体检报告 + 接入演练 + 验收自检；三档自检
   （验收六条 / 打包就绪 / registry 说法核实）每一档都验证过**能失败**。
 
 ## 参考与借鉴说明

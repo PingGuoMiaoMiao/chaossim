@@ -107,6 +107,13 @@ jobs:
           moon run adapters/moonmq/checkup --target native | tee checkup.txt
           grep -q "通过" checkup.txt
 
+      # Third target TYPE: a pure codec, where "did a message get lost" does not
+      # apply and the audit checks round-trip and robustness instead.
+      - name: Codec audit (moonredis RESP2/RESP3)
+        run: |
+          moon run adapters/moonredis/checkup --target native | tee codec.txt
+          grep -q "PASS" codec.txt
+
       # docs/adopting.md is executable documentation: this member is a
       # third-party-shaped library written by following the guide, so a stale
       # guide fails CI instead of quietly misleading readers.
