@@ -47,6 +47,11 @@ SNAPSHOT_MARKER = "consistency:snapshot"
 # tool would forbid ever writing about the bug it exists to catch.
 LINE_IGNORE = "consistency:ignore"
 
+# The submission documents are read by people, so they write "五个真实靶子".
+# A digit-only guard scanned zero claims there and reported PASS - the failure
+# mode this whole file exists to prevent.
+CN_NUM = {"二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
+
 TEXT_SUFFIXES = {".md"}
 
 
@@ -492,14 +497,31 @@ def check_derived_counts(root: Path):
     asserts = None
     if checkup.is_file():
         asserts = len(re.findall(r"assert_(?:true|false|eq)\s*\(|inspect\s*\(", read(checkup)))
+    # Adapter count: one directory per target, spikes excluded (a spike is a
+    # throwaway seam probe, not something CI keeps green).
+    adapters = None
+    root_adapters = root / "adapters"
+    if root_adapters.is_dir():
+        named = [p for p in root_adapters.iterdir()
+                 if p.is_dir() and not p.name.endswith("-spike")]
+        if named:
+            adapters = len(named)
 
-    # (label, compiled pattern, real value). Each pattern is narrow on purpose:
-    # "N 条断言" also appears about an unrelated spike in decisions.md, and a
-    # guard that fires on the wrong subject gets switched off.
+    # (label, compiled pattern, real value, converter). Each pattern is narrow
+    # on purpose: "N 条断言" also appears about an unrelated spike in
+    # decisions.md, and a guard that fires on the wrong subject gets switched
+    # off. The adapter target count is written with Chinese numerals in the
+    # submission documents ("五个真实靶子"), so both forms must parse - the
+    # digit-only version scanned zero claims and looked green.
+    def _num(token: str) -> int:
+        return CN_NUM.get(token) or int(token)
+
     rules = [
-        ("probe", re.compile(r"(\d{1,4})\s*条(?:尖角)?探针"), probes),
-        ("lincheck", re.compile(r"线性一致性检查[^\d\n]{0,8}(\d{1,4})\s*条测试"), lin),
-        ("assertion", re.compile(r"checkup_wbtest\.mbt`?\s*(\d{1,4})\s*条断言"), asserts),
+        ("probe", re.compile(r"(\d{1,4})\s*条(?:尖角)?探针"), probes, int),
+        ("lincheck", re.compile(r"线性一致性检查[^\d\n]{0,8}(\d{1,4})\s*条测试"), lin, int),
+        ("assertion", re.compile(r"checkup_wbtest\.mbt`?\s*(\d{1,4})\s*条断言"), asserts, int),
+        ("target", re.compile(r"(?<!第)([一二三四五六七八九十]|\d{1,2})\s*个(?:真实)?(?:适配器|靶子)"),
+         adapters, _num),
     ]
     findings = []
     scanned = 0
@@ -515,11 +537,11 @@ def check_derived_counts(root: Path):
         for lineno, line in enumerate(body.splitlines(), 1):
             if LINE_IGNORE in line:
                 continue
-            for label, pattern, real in rules:
+            for label, pattern, real, parse in rules:
                 if real is None:
                     continue
                 for m in pattern.finditer(line):
-                    value = int(m.group(1))
+                    value = parse(m.group(1))
                     if value < 2 or value > 100_000:
                         continue
                     scanned += 1

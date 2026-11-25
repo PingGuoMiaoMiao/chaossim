@@ -48,7 +48,7 @@ chaossim 把它变成 `moon test` 里秒级完成、同种子必定复现的一�
 - **并发交错扫描**：两个客户端抢同一队列，多种脚本 × 多组故障 × 多种子，
   逐次检查"同一消息不被两个客户端持有 / 不跨客户端误确认 / 记账闭合"
   （实测 320 次运行，0 违规）；
-- **三个真实靶子，同一内核零改动**：
+- **五个真实靶子，同一内核零改动**：
   - `Duckweed/moon-mqtt`（MQTT 3.1.1 客户端）：QoS1、QoS2 四段握手、双消息交错、多客户端隔离；
   - `binhongcha/moonamqp1`（AMQP 1.0）：credit / settlement 记账在丢传输、丢结算、慢服务下成立；
   - `Zcxssxx/moonmq`（AMQP 0-9-1 broker）：**服务端**语义，确认/重投/预取记账；
@@ -61,7 +61,8 @@ chaossim 把它变成 `moon test` 里秒级完成、同种子必定复现的一�
 - **接入指南是可执行的**：`examples/adopting-drill/` 是完全按指南写出的第三方小库，
   随 `moon test` 跑，指南失效则构建红；`examples/quickstart/` 为最小可跑示例；
 - **质量门与自检**：**74/74** 测试、`moon check --deny-warn` 零警告、CI 覆盖库 +
-  五个适配器 + 三份审计/体检报告 + 接入演练 + 验收自检；三档自检
+  五个适配器 + 两份体检报告（`moonmq` 11 项 / `moontxnkit` 10 项，落盘为文档）+
+  一份编解码审计（`moonredis`，CI 每次生成）+ 接入演练 + 验收自检；三档自检
   （验收六条 / 打包就绪 / registry 说法核实）每一档都验证过**能失败**。
 
 ## 参考与借鉴说明
@@ -137,4 +138,4 @@ python tools/acceptance.py --since 2026-11-01          # 验收自检
 python tools/selfcheck.py                              # 一条命令看全部状态
 ```
 
-数字属于 `41a6672`（2026-11-21 实测）；当前值见 `docs/status.md`（每条都带取值命令）。
+数字属于 `f6071fb`（2026-11-21 实测）；当前值见 `docs/status.md`（每条都带取值命令）。

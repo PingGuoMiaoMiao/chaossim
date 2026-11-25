@@ -7,7 +7,7 @@ it is* (virtual clock), and *which node is down* (crash plan). Every run is
 replayable byte-for-byte from its seed and produces a trace you can diff,
 shrink and attach to an issue.
 
-`v0.3.0` · 74 项测试全绿 · 验收自检 8 PASS / 0 WARN · MIT · CI 覆盖库 + 三个适配器
+`v0.3.0` · 74 项测试全绿 · 验收自检 8 PASS / 0 WARN · MIT · CI 覆盖库 + 五个适配器
 
 ## 你会拿到什么
 
@@ -65,7 +65,7 @@ shrink and attach to an issue.
 ## Quick start
 
 需要 MoonBit 工具链（`0.1.20261104` 或更新）。**只有** `tools/` 下的自检脚本需要
-Python 3.9+；库本身与三个适配器都是纯 MoonBit。
+Python 3.9+；库本身与五个适配器都是纯 MoonBit。
 
 从零 clone 后按这个顺序跑，每一条都是独立可验证的（实测总耗时约 8 秒）：
 

@@ -23,7 +23,7 @@ moon run adapters/moonmq/checkup --target native   # 11 项检查 → 一份报�
 | 现有 | 它们做的 | chaossim 多出来的 |
 | --- | --- | --- |
 | `oyjh0381/moonlab` | 仿真你**重写成模型**的协议 | 仿真**生产代码本体**；问题若存在，暴露在实现层而非模型层 |
-| 靶子自带的 scripted broker / 模拟簇 | 项目内部的正序自查 | **协议无关的可复用 harness**，跨两个域验证 |
+| 靶子自带的 scripted broker / 模拟簇 | 项目内部的正序自查 | **协议无关的可复用 harness**，跨三个域（消息 / 事务 / 编解码）验证 |
 | Jepsen（生态外） | 真集群 + 真网络故障 | 同方法论的进程内确定性版：无部署、CI 秒级、可重放 |
 | 线性一致性检查器 | 判定并发历史是否合法（oracle） | 本项目**不重造 oracle**：见下节"复用声明"——按定义自己实现了一个并验证了拒绝路径 |
 
@@ -56,11 +56,13 @@ moon fetch moonbit-community/lincheck            # -> was not found in the regis
   `delivered + dropped == step`（抓消息凭空消失）、trace 不得有空行（防静默步骤）
 - **线性一致性检查**：6 条测试**双向**验证——顺序一致通过、**实时序禁止的旧读被拒绝**、
   **写偏斜被拒绝**、并发的两个读可通过、未返回操作不约束、预算耗尽报 unknown 而非通过
-- **三个真实靶子，同一套内核零改动**（分两个域）：
+- **五个真实靶子，同一套内核零改动**（分三种目标类型）：
   - **消息域**：`Duckweed/moon-mqtt`（MQTT 3.1.1 客户端）、`binhongcha/moonamqp1`
     （AMQP 1.0 端点对）、`Zcxssxx/moonmq`（AMQP 0-9-1 broker，**服务端**语义）
   - **事务域**：`black-duck666/moontxnkit`（MVCC 事务引擎）——脏读、写写冲突、
     快照隔离、保存点、删除、压缩，10 项检查
+  - **编解码域**：`moonbitstack/moonredis`（RESP2/RESP3）——没有消息可丢，审计按
+    codec 的性质重写（往返、截断必拒、随机字节不崩、深嵌套不爆栈），5 组用例
 - **两份体检报告**（命令生成，非手写）：[checkup-moonmq.md](checkup-moonmq.md)、
   [checkup-moontxnkit.md](checkup-moontxnkit.md)；换域指南见
   [checkup-guide.md](checkup-guide.md)（形状可照抄，规则按域重写）
@@ -73,7 +75,7 @@ moon fetch moonbit-community/lincheck            # -> was not found in the regis
   随 `moon test` 跑；指南失效则构建红。`examples/quickstart/` 是最小可跑示例
 - **性能**：493–570 ns / 调度步（release）；1000 种子 × 20 步扫描约 10 ms
   （`moon run cmd/perf --release`）——全量种子扫描放 CI 可行
-- **质量门**：**74/74** 测试、`moon check --deny-warn` 零警告、CI 跑库 + 四个适配器
+- **质量门**：**74/74** 测试、`moon check --deny-warn` 零警告、CI 跑库 + 五个适配器
   + 体检报告 + 接入演练 + 验收自检；验收自检 **8 PASS / 0 WARN / 0 FAIL**，
   文档一致性 **8/8**
 
