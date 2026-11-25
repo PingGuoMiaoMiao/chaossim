@@ -556,6 +556,73 @@ def check_derived_counts(root: Path):
     return ("PASS", f"{scanned} derived-count claim(s) match the test files")
 
 
+def check_publish_status_claims(root: Path):
+    """If the registry carries this module, no living document may call it unpublished.
+
+    docmunch shipped this exact bug: six documents said "0.3.1 未发布" while the
+    registry had carried it for days. The registry check above only validated
+    positive claims (published versions, download counts), so a stale *negative*
+    claim - "not published" - slipped through every gate. This closes that half.
+
+    Network-dependent: SKIP when the registry is unreachable. When the module is
+    genuinely unpublished, "未发布" is correct and this returns PASS.
+    """
+    moon_mod = root / "moon.mod"
+    if not moon_mod.is_file():
+        return ("SKIP", "no moon.mod")
+    m = re.search(r'^name\s*=\s*"([^"]+)"', read(moon_mod), re.M)
+    if not m:
+        return ("SKIP", "moon.mod has no name field")
+    module = m.group(1)
+    try:
+        import urllib.request
+        req = urllib.request.Request(
+            "https://mooncakes.io/api/v0/manifest/" + module,
+            headers={"User-Agent": "consistency-check"},
+        )
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            raw = resp.read().decode("utf-8", "replace")
+    except Exception as exc:  # transport problems never fail the build
+        return ("SKIP", f"registry unreachable ({type(exc).__name__})")
+
+    versions = sorted(set(re.findall(r'"version"\s*:\s*"([0-9][^"]*)"', raw)))
+    if not versions:
+        return ("PASS", "module is not on the registry yet; 'unpublished' is accurate")
+
+    latest = versions[-1]
+    # Only living status documents: ADRs and changelog history legitimately record
+    # "it was unpublished then", so scanning them would produce false positives.
+    living = ["docs/status.md", "docs/adoption.md", "README.md"]
+    patterns = [
+        r"尚未发布",
+        r"未发布到 MoonCakes",
+        r"\*\*未发布\*\*",
+        r"无（未发布）",
+        r"not published",
+        r"unpublished",
+    ]
+    findings = []
+    scanned = 0
+    for rel in living:
+        path = root / rel
+        if not path.is_file():
+            continue
+        scanned += 1
+        for lineno, line in enumerate(read(path).splitlines(), start=1):
+            for pattern in patterns:
+                if re.search(pattern, line):
+                    findings.append(f"{rel}:{lineno}: still claims unpublished "
+                                    f"while registry has {latest}")
+                    break
+
+    if findings:
+        return ("FAIL", "; ".join(findings[:5]))
+    if scanned == 0:
+        return ("SKIP", "no living status documents to scan")
+    return ("PASS", f"registry has {latest}; {scanned} status document(s) do not "
+                    f"claim it is unpublished")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--project", default=".")
@@ -583,6 +650,7 @@ def main() -> int:
     ]
     if args.with_registry:
         results.append(("Registry", check_registry_facts(root)))
+        results.append(("Publish status", check_publish_status_claims(root)))
     if args.json:
         out(json.dumps([{"check": n, "status": s, "evidence": e} for n, (s, e) in results], ensure_ascii=False))
     else:

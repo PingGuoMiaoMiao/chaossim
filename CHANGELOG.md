@@ -3,8 +3,8 @@
 按**能力**组织，不是 `git log` 的搬运。每条给出可复跑命令与相关 commit，
 被否决的方向也记（避免重复试错，也便于评审判断取舍）。
 
-版本号对应 `moon.mod`。`0.3.0` 已可打包验证但**尚未发布到 MoonCakes**
-（需要维护者执行 `moon login`，见文末）。
+版本号对应 `moon.mod`。`0.3.0` 已于 **2026-11-25 发布到 MoonCakes**
+（registry 构建 `success`，`moon add PingGuoMiaoMiao/chaossim` 可安装）。
 
 ---
 
@@ -74,4 +74,4 @@
 - **transport / 浏览器胶水层未覆盖**：只覆盖靶子的纯计算核心
 - **AMQP 握手是同步驱动的**，握手期间的故障未注入
 - **每步拼 trace 字符串**可能是主要成本，未优化（先有数字再谈优化）
-- **0.3.0 未发布**：`moon package` 通过且包干净，只差 `moon login` → `moon publish`
+- **0.3.0 发布（2026-11-25）**：`Server status: 200 OK`，registry 构建 `success`；外部模块已改为从 registry 解析验证

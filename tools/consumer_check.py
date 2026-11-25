@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
 """Prove a module OUTSIDE this repository can build and run against chaossim.
 
-chaossim is not published yet, so there is no registry version to resolve. What
-can still be checked - and is checked here - is that a *separate* module with its
-own `moon.mod`, living outside the repository, can depend on this project by
-name, build, run a real fault scenario, and verify its own replay artifact.
+Two modes, because "can a stranger use it" has two different answers:
 
-A workspace file is used to point at the local checkout, which is exactly how a
-consumer would pin a path dependency during development. When the package is
-published this script should switch to resolving from the registry; the
-`--version` flag records that intent.
+  registry  (default now that 0.3.0 is published) the external module declares
+            `PingGuoMiaoMiao/chaossim@<version>` and resolves it from MoonCakes -
+            no path, no workspace file, nothing from this checkout
+  local     the pre-publish mode: a workspace file pins the local checkout, which
+            is how a consumer would depend on an unpublished project
 
-Usage: python tools/consumer_check.py
-Exit: 0 = the external module built, ran and verified its replay.
+`auto` (the default) tries registry first and falls back to local, saying which
+one it used. Before publishing, only local could work; now registry is the honest
+test, because a path dependency proves nothing about distribution.
+
+Usage:
+  python tools/consumer_check.py                # auto: registry, else local
+  python tools/consumer_check.py --mode registry
+  python tools/consumer_check.py --mode local
+Exit: 0 = the external module built, ran and verified its replay artifact.
 """
 
+import argparse
 import shutil
 import subprocess
 import sys
@@ -42,7 +48,7 @@ APP_PKG = """import {{
 pkgtype(kind: "executable")
 """
 
-APP_MAIN = """// Consumer living OUTSIDE the chaossim repository: depends on it by name,
+APP_MAIN = r"""// Consumer living OUTSIDE the chaossim repository: depends on it by name,
 // runs one fault scenario, then verifies the replay artifact it produced.
 
 fn handler(node : Int32, msg : @sim.Msg) -> Array[@sim.Msg] {
@@ -75,6 +81,8 @@ fn main {
 }
 """
 
+REQUIRED = ("dropped=1", "verified_steps=", "replay_bytes=")
+
 
 def run(args, cwd):
     return subprocess.run(
@@ -83,50 +91,85 @@ def run(args, cwd):
     )
 
 
-def main() -> int:
-    work = Path(tempfile.mkdtemp(prefix="chaossim-consumer-"))
+def manifest_version():
+    for line in (PROJECT / "moon.mod").read_text(encoding="utf-8").splitlines():
+        if line.strip().startswith("version"):
+            return line.split("=")[1].strip().strip('"')
+    return "0.0.0"
+
+
+def attempt(mode, version):
+    """Write the consumer module for `mode`, run it, return (ok, output)."""
+    work = Path(tempfile.mkdtemp(prefix=f"chaossim-consumer-{mode}-"))
     try:
         app = work / "app"
         (app / "src").mkdir(parents=True)
-        version = "0.3.0"
-        for line in (PROJECT / "moon.mod").read_text(encoding="utf-8").splitlines():
-            if line.strip().startswith("version"):
-                version = line.split("=")[1].strip().strip('"')
-                break
         (app / "moon.mod").write_text(
-            APP_MANIFEST.format(module=MODULE, version=version), encoding="utf-8"
-        )
+            APP_MANIFEST.format(module=MODULE, version=version), encoding="utf-8")
         (app / "src" / "moon.pkg").write_text(
-            APP_PKG.format(module=MODULE), encoding="utf-8"
-        )
+            APP_PKG.format(module=MODULE), encoding="utf-8")
         (app / "src" / "main.mbt").write_text(APP_MAIN, encoding="utf-8")
-        # A workspace file is how a consumer points at a local checkout while the
-        # package is unpublished.
-        (work / "moon.work").write_text(
-            'members = [\n  "app",\n  "%s",\n]\n'
-            % str(PROJECT).replace("\\", "/"),
-            encoding="utf-8",
-        )
+        if mode == "local":
+            # A workspace file is how a consumer points at a local checkout while
+            # the package is unpublished.
+            (work / "moon.work").write_text(
+                'members = [\n  "app",\n  "%s",\n]\n'
+                % str(PROJECT).replace("\\", "/"),
+                encoding="utf-8",
+            )
+            target = "app/src"
+            cwd = work
+        else:
+            # registry mode: the module stands alone, nothing from this checkout
+            target = "src"
+            cwd = app
 
-        print(f"consuming {MODULE}@{version} from a module outside the repository")
-        res = run(["moon", "run", "app/src", "--target", "native"], work)
-        if res.returncode != 0:
-            print("FAIL build/run")
-            print((res.stdout + res.stderr)[-1500:])
-            return 1
-        print("run output:")
-        for line in res.stdout.strip().splitlines():
-            print("  " + line)
-        required = ("dropped=1", "verified_steps=", "replay_bytes=")
-        missing = [m for m in required if m not in res.stdout]
-        if missing:
-            print(f"FAIL output missing: {missing}")
-            return 1
+        res = run(["moon", "run", target, "--target", "native"], cwd)
+        output = res.stdout + res.stderr
+        ok = res.returncode == 0 and all(m in res.stdout for m in REQUIRED)
+        return ok, output, res.stdout
     finally:
         shutil.rmtree(work, ignore_errors=True)
-    print("\nconsumer check passed: an external module resolved chaossim by name, "
-          "ran a fault scenario and verified its replay artifact")
-    return 0
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--mode", choices=("auto", "registry", "local"), default="auto")
+    args = ap.parse_args()
+
+    version = manifest_version()
+    order = {"auto": ("registry", "local"), "registry": ("registry",),
+             "local": ("local",)}[args.mode]
+
+    for mode in order:
+        print(f"consuming {MODULE}@{version} from a module outside the repository "
+              f"(mode={mode})")
+        ok, output, stdout = attempt(mode, version)
+        if not ok and mode == "registry" and "not found in the registry" in output:
+            # The local registry index is a cache; a fresh publish is invisible
+            # until it is refreshed. Self-heal once instead of telling the user to
+            # remember `moon update`.
+            print("  registry index is stale for this version; running `moon update`")
+            run(["moon", "update"], PROJECT)
+            ok, output, stdout = attempt(mode, version)
+        if ok:
+            print("run output:")
+            for line in stdout.strip().splitlines():
+                print("  " + line)
+            print(f"\nconsumer check passed via {mode}: an external module resolved "
+                  f"chaossim by name, ran a fault scenario and verified its replay "
+                  f"artifact")
+            return 0
+        tail = output.strip().splitlines()[-4:]
+        print(f"  mode={mode} did not pass:")
+        for line in tail:
+            print("    " + line)
+        if mode == "registry" and args.mode == "auto":
+            print("  (falling back to local; a registry miss usually means this "
+                  "version is not published yet)")
+
+    print("\nconsumer check FAILED in every mode")
+    return 1
 
 
 if __name__ == "__main__":

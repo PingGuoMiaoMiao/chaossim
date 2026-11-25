@@ -1,14 +1,16 @@
 # 采用记录
 
 本文件把"数据"和"证据"分开，并且**不把下载量或 star 写成采用**。
-chaossim 目前**尚未发布到 MoonCakes**，所以外部采用必然为零——这一点写在最前面，
-而不是等读者自己发现。
+chaossim 已于 **2026-11-25 发布到 MoonCakes**（`0.3.0`，registry 构建 `success`），
+但外部采用仍然为零——这一点写在最前面，而不是等读者自己发现。
 
-## 1. 原始数据（截至 2026-11-20）
+## 1. 原始数据（截至 2026-11-25）
 
 | 指标 | 数值 | 来源 |
 | --- | --- | --- |
-| MoonCakes 下载 | 无（未发布） | `moon publish --dry-run` 通过，但尚未 publish |
+| MoonCakes 版本 | **0.3.0**（构建 `success`） | `mooncakes.io/api/v0/manifest/PingGuoMiaoMiao/chaossim` |
+| MoonCakes 下载 | 发布当天 1（活数字，以 registry 为准） | 同上 → `downloads` |
+| MoonCakes 依赖者 | **0** | 同上 → `dependents` |
 | GitHub Star / Fork / Issue | **1 / 0 / 0** | `gh api repos/PingGuoMiaoMiao/chaossim` |
 | 仓库创建 | 2026-11-19 | 同上 |
 | Clone 数据 | **取不到** | traffic API 需鉴权（`401`），本机无 token |
@@ -16,10 +18,10 @@ chaossim 目前**尚未发布到 MoonCakes**，所以外部采用必然为零—
 **怎么读**：1 个 star 说明有人点开看过；0 依赖者、0 fork、0 issue 说明**没有任何
 第三方把用起来的痕迹**。这两件事不能混为一谈。
 
-## 2. 未发布阶段能证明什么（比 star 硬）
+## 2. 发布之后能证明什么（比 star 硬）
 
-发布前无法验证"从 registry 消费"，但可以验证**一个仓库之外的独立模块能不能真的
-用起来**。这是本文件的核心证据：
+发布后可以验证最硬的一条：**一个仓库之外的独立模块，不引用本地路径，直接从
+registry 解析 `PingGuoMiaoMiao/chaossim@0.3.0`，能不能真的用起来**。这是本文件的核心证据：
 
 ```sh
 python tools/consumer_check.py
@@ -29,7 +31,7 @@ python tools/consumer_check.py
 里），按名字依赖 `PingGuoMiaoMiao/chaossim`，然后跑一个真实故障场景：
 
 ```
-consuming PingGuoMiaoMiao/chaossim@0.3.0 from a module outside the repository
+consuming PingGuoMiaoMiao/chaossim@0.3.0 from a module outside the repository (mode=registry)
   steps=2 delivered=1 dropped=1     ← 注入 crash 后确实有消息被丢弃
   replay_bytes=285                  ← 产出可分发的 replay 工件
   verified_steps=2                  ← 工件被 replay_verify 重新执行并核对
@@ -39,7 +41,7 @@ consuming PingGuoMiaoMiao/chaossim@0.3.0 from a module outside the repository
 并对工件自证"。第三步（`replay_verify`）尤其重要：它说明工件不是日志，是**可执行
 的主张**。
 
-另外三条已入 CI 的证据（都不依赖发布）：
+另外三条已入 CI 的证据：
 
 | 证据 | 命令 | 说明 |
 | --- | --- | --- |
@@ -60,10 +62,14 @@ consuming PingGuoMiaoMiao/chaossim@0.3.0 from a module outside the repository
 **当前状态：四项全为 0。** 因此本文件不主张"已被采用"，只主张
 "已具备可被采用的形态，且这个形态由可复跑脚本证明"。
 
-## 4. 发布后要补的事
+## 4. 发布这件事做完之后
 
-1. `moon publish`（当前包已 `202 Accepted`，只差维护者 `moon login`）；
-2. publish 之后把 `tools/consumer_check.py` 从"路径依赖"切换成"从 registry 解析"
-   ——脚本里已留了 `--version` 意图注释，切换是改几行而不是重写；
-3. 重新跑 `python tools/selfcheck.py --with-registry`，让"已发布版本"这类主张
-   由 registry 本身核对，而不是靠人记。
+1. ✅ `moon publish` 已执行（2026-11-25，`Server status: 200 OK`，registry 构建 `success`）；
+2. ✅ `tools/consumer_check.py` 已切换为**默认从 registry 解析**（`--mode registry`），
+   并保留 `--mode local` 作为离线/发布前的等价检查；registry 索引过期时脚本会自己
+   `moon update` 后重试一次；
+3. ✅ `python tools/selfcheck.py --with-registry` 现在会拿 registry 的实际 latest 与
+   下载数核对 `docs/adoption.md` 里的说法。
+
+**下一步才算"采用"**：别的仓库在 `moon.mod` 里依赖它、有人基于它提 issue/PR、
+或第三方用自己的实现满足我们声明的契约。这些当前都还是 0。

@@ -10,3 +10,4 @@ _msg.txt
 _m.txt
 
 .testtmp/
+__pycache__/

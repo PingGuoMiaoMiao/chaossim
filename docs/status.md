@@ -1,15 +1,15 @@
-# 当前状态快照（2026-11-20 实测）
+# 当前状态快照（2026-11-25 实测）
 
 > 用途：申报表/验收材料取数用，不必从多份文档里拼。
 > 每一行都给出**取值方式**，所以过期了可以自己重算，而不是相信这份文档。
-> 本文件是快照：数字属于 2026-11-20 15:00（UTC+8）。
+> 本文件是快照：数字属于 2026-11-25 11:40（UTC+8）。
 
 ## 关键事实
 
 | 项 | 值 | 怎么取的 |
 | --- | --- | --- |
 | 仓库版本 | `0.3.0` | `moon.mod` 的 `version` |
-| MoonCakes | **未发布** | `moon publish --dry-run` 返回 `Server status: 202 Accepted`（可以发），但尚未 `moon login` → `moon publish` |
+| MoonCakes | **已发布 `0.3.0`**（构建 `success`） | `mooncakes.io/api/v0/manifest/PingGuoMiaoMiao/chaossim` → `latest_version` / `build_status` |
 | 打包就绪 | ✅ 成品包解压后**重新检查通过** | `moon publish --dry-run` 会解压 zip 再 check 一遍 |
 | 测试 | **74 / 74 全绿** | `moon test --target native` |
 | 验收自检 | **8 PASS / 0 WARN / 0 FAIL** | `python tools/acceptance.py --since 2026-11-01` |
